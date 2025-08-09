@@ -1,0 +1,22 @@
+{
+  "name": "com.calluna.core",
+  "version": "0.0.1",
+  "displayName": "Calluna Core",
+  "description": "The core scripts of Calluna Games' Unity projects",
+  "unity": "6000.0",
+  "unityRelease": "",
+  "documentationUrl": "https://github.com/CallunaGames/CallunaUnityCore",
+  "changelogUrl": "",
+  "licensesUrl": "",
+  "dependencies": {
+    
+ },
+ "keywords": [
+    
+  ],
+  "author": {
+    "name": "Calluna Games",
+    "email": "callunagames.temp@gmail.com",
+    "url": ""
+  }
+}
