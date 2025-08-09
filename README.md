@@ -49,15 +49,13 @@ public ReadonlyObservable<TValue> ObservableValue => _observableValue;
 Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
 observableValue.OnChanged += () => { Debug.Log("On value changed") }
 observableValue.Value = new TValue();
-
-*On value changed*
 ```
+**On value changed**
 
 #### Listen to Value Change With Values
 ```c#
 Observable<int> observableValue = new Observable<int>() { Value = 2 };
 observableValue.OnChangedWithValues += (TValue former, TValue newValue) => { Debug.Log($"On value changed ({former} | {newValue})") }
 observableValue.Value = 5;
-
-*On value changed (2 | 5)*
 ```
+**On value changed (2 | 5)**
