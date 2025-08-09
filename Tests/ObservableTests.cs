@@ -74,6 +74,23 @@ namespace Calluna.Core.Tests
             Assert.IsFalse(called);
         }
 
+        [Test, Description("Set value implicitly => Is value set?")]
+        public void Observable_SetValueImplicit_Value<T>(
+            [ValueSource(nameof(_testValues))] TestValues<T> value)
+        {
+            Observable<T> observable = value.FormerValue;
+            Assert.AreEqual(value.FormerValue, observable.Value);
+        }
+
+        [Test, Description("Get value implicitly => Is value as expected?")]
+        public void Observable_GetValueImplicit_Value<T>(
+            [ValueSource(nameof(_testValues))] TestValues<T> value)
+        {
+            Observable<T> observable = value.FormerValue;
+            T result = observable.Value;
+            Assert.AreEqual(value.FormerValue, result);
+        }
+
         public struct TestValues<T>
         {
             public T FormerValue { get; set; }
