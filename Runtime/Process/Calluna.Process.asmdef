@@ -1,13 +1,15 @@
 {
-    "name": "Calluna.Core.Samples",
-    "rootNamespace": "Calluna.Core.Samples",
-    "references": [],
+    "name": "Calluna.Process",
+    "rootNamespace": "Calluna.Process",
+    "references": [
+        "GUID:fb92ad7c22f767448a052126eb8fa706"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": false,
+    "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false
