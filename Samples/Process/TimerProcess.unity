@@ -193,9 +193,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec903614eff84fbdbb7fc7ac83b88ad3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _enableDebug: 1
   _loggerTypeColor: {r: 0.27299154, g: 0.27299154, b: 0.8113208, a: 1}
   _statusColor: {r: 1, g: 1, b: 1, a: 1}
+  _runningProcessLogFrequency: 0.5
+  _loggerName: Timer
   _processor: {fileID: 721250428}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -15,14 +15,14 @@ namespace Calluna.Process.Samples
 
         private void Start()
         {
-            MutableProcess[] processes = new MutableProcess[_amountOfSubprocesses];
+            ControllableProcess[] processes = new ControllableProcess[_amountOfSubprocesses];
             
             for (int i = 0; i < _amountOfSubprocesses; i++)
             {
                 processes[i] = new TimerProcess(_timerDuration);
             }
 
-            MutableProcess process = _useDefaultName
+            ControllableProcess process = _useDefaultName
                 ? new ProcessSequence(processes)
                 : new ProcessSequence(processes, _processName);
             _processor.Process(process);

@@ -4,23 +4,23 @@ using System.Linq;
 
 namespace Calluna.Process
 {
-    public class ProcessSequence : MutableProcessBase
+    public class ProcessSequence : ControllableProcessBase
     {
-        private readonly IEnumerable<MutableProcess> _processes;
+        private readonly IEnumerable<ControllableProcess> _processes;
 
-        private IEnumerator<MutableProcess> _currentProcessEnumerator;
+        private IEnumerator<ControllableProcess> _currentProcessEnumerator;
         private readonly int _processCount;
         private int _index = -1;
         private readonly string _nameOverride;
 
-        public ProcessSequence(IEnumerable<MutableProcess> subProcesses)
+        public ProcessSequence(IEnumerable<ControllableProcess> subProcesses)
         {
-            MutableProcess[] mutableProcesses = subProcesses as MutableProcess[] ?? subProcesses.ToArray();
+            ControllableProcess[] mutableProcesses = subProcesses as ControllableProcess[] ?? subProcesses.ToArray();
             _processes = mutableProcesses;
             _processCount = mutableProcesses.Length;
         }
 
-        public ProcessSequence(IEnumerable<MutableProcess> subProcesses, string name) : this(subProcesses)
+        public ProcessSequence(IEnumerable<ControllableProcess> subProcesses, string name) : this(subProcesses)
         {
             _nameOverride = name;
         }
@@ -33,7 +33,7 @@ namespace Calluna.Process
 
         protected override void DoTick()
         {
-            MutableProcess currentProcess = _currentProcessEnumerator.Current;
+            ControllableProcess currentProcess = _currentProcessEnumerator.Current;
 
             if (currentProcess == null)
             {
@@ -81,8 +81,13 @@ namespace Calluna.Process
 
         protected override void UpdateProgress()
         {
+            _progress.Value = _processCount > 0 ? CalculateProgress() : 0;
+        }
+
+        private float CalculateProgress()
+        {
             float delta = 1 / (float)_processCount;
-            _progress.Value = _index * delta + _currentProcessEnumerator?.Current?.Progress.Value ?? 0;
+            return _index * delta + _currentProcessEnumerator?.Current?.Progress.Value * delta ?? 0;
         }
 
         private string GetName()

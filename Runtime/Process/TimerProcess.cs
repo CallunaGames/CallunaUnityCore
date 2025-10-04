@@ -1,9 +1,8 @@
-﻿using System.Threading;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Calluna.Process
 {
-    public class TimerProcess : MutableProcessBase
+    public class TimerProcess : ControllableProcessBase
     {
         private readonly float _duration;
         private float _targetTime = float.MinValue;
@@ -39,7 +38,7 @@ namespace Calluna.Process
 
         protected override void UpdateProgress()
         {
-            _progress.Value = (_targetTime - Time.time)/_duration;
+            _progress.Value = 1 - (_targetTime - Time.time)/_duration;
         }
     }
 }

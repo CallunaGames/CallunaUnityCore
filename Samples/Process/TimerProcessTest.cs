@@ -13,7 +13,7 @@ namespace Calluna.Process.Samples
 
         private void Start()
         {
-            MutableProcess process = _useDefaultName
+            ControllableProcess process = _useDefaultName
                 ? new TimerProcess(_timerDuration)
                 : new TimerProcess(_timerDuration, _timerName);
             _processor.Process(process);

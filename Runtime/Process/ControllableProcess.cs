@@ -1,6 +1,6 @@
 namespace Calluna.Process
 {
-    public interface MutableProcess : Process
+    public interface ControllableProcess : Process
     {
         public void Start();
         public void Tick();

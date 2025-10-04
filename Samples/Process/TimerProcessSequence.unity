@@ -150,8 +150,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec903614eff84fbdbb7fc7ac83b88ad3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _loggerTypeColor: {r: 0.27299154, g: 0.27299154, b: 0.8113208, a: 1}
+  _loggerTypeColor: {r: 0.8117647, g: 0.58228636, b: 0.2745098, a: 1}
   _statusColor: {r: 1, g: 1, b: 1, a: 1}
+  _runningProcessLogFrequency: 0.5
+  _loggerName: Test Logger
   _processor: {fileID: 836454919}
 --- !u!114 &836454919
 MonoBehaviour:
@@ -193,7 +195,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _timerDuration: 2
-  _amountOfSubprocesses: 3
+  _amountOfSubprocesses: 4
   _processName: Timer Sequence
   _useDefaultName: 0
   _processor: {fileID: 836454919}

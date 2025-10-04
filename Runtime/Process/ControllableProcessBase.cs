@@ -2,7 +2,7 @@
 
 namespace Calluna.Process
 {
-    public abstract class MutableProcessBase : ProcessBase, MutableProcess
+    public abstract class ControllableProcessBase : ProcessBase, ControllableProcess
     {
         public override event Action<Process> OnFinished;
         

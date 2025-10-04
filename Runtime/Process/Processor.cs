@@ -8,50 +8,50 @@ namespace Calluna.Process
         public ReadonlyObservable<Process> CurrentProcess => _currentProcess;
         
         private readonly Observable<Process> _currentProcess = new();
-        private MutableProcess _currentMutableProcess;
+        private ControllableProcess _currentControllableProcess;
 
-        public void Process(MutableProcess process)
+        public void Process(ControllableProcess process)
         {
-            if (_currentMutableProcess is { IsRunning: true })
+            if (_currentControllableProcess is { IsRunning: true })
             {
                 throw new InvalidOperationException("Please abort the current process before starting the next.");
             }
 
-            if (_currentMutableProcess != null)
+            if (_currentControllableProcess != null)
             {
                 Clean();
             }
 
-            _currentMutableProcess = process;
+            _currentControllableProcess = process;
             _currentProcess.Value = process;
-            _currentMutableProcess.Start();
+            _currentControllableProcess.Start();
         }
 
         public void StopProcess()
         {
-            if (_currentMutableProcess is not { IsRunning: true })
+            if (_currentControllableProcess is not { IsRunning: true })
             {
                 throw new InvalidOperationException(
                     "The current process is not running and therefore can not be stopped.");
             }
 
-            _currentMutableProcess.Abort();
+            _currentControllableProcess.Abort();
             Clean();
         }
 
         private void Update()
         {
-            if (_currentMutableProcess is { IsRunning: true })
+            if (_currentControllableProcess is { IsRunning: true })
             {
-                _currentMutableProcess.Tick();
+                _currentControllableProcess.Tick();
             }
         }
 
         private void OnDestroy()
         {
-            if (_currentMutableProcess is { IsRunning: true })
+            if (_currentControllableProcess is { IsRunning: true })
             {
-                _currentMutableProcess.Abort();
+                _currentControllableProcess.Abort();
             }
             Clean();
         }
@@ -59,7 +59,7 @@ namespace Calluna.Process
         private void Clean()
         {
             _currentProcess.Value = null;
-            _currentMutableProcess = null;
+            _currentControllableProcess = null;
         }
     }
 }
