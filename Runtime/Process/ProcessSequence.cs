@@ -7,11 +7,11 @@ namespace Calluna.Process
     public class ProcessSequence : ControllableProcessBase
     {
         private readonly IEnumerable<ControllableProcess> _processes;
-
-        private IEnumerator<ControllableProcess> _currentProcessEnumerator;
         private readonly int _processCount;
-        private int _index = -1;
         private readonly string _nameOverride;
+        
+        private IEnumerator<ControllableProcess> _currentProcessEnumerator;
+        private int _index = -1;
 
         public ProcessSequence(IEnumerable<ControllableProcess> subProcesses)
         {
@@ -62,6 +62,7 @@ namespace Calluna.Process
         protected override void DoAbort()
         {
             _currentProcessEnumerator.Current?.Abort();
+            _currentProcessEnumerator.Dispose();
         }
 
         private void MoveToNextSubProcess()
@@ -73,15 +74,21 @@ namespace Calluna.Process
             }
             else
             {
-                _currentProcessEnumerator = null;
-                _index = _processCount;
-                FinishProcess();
+                FinishSequence();
             }
         }
 
         protected override void UpdateProgress()
         {
             _progress.Value = _processCount > 0 ? CalculateProgress() : 0;
+        }
+
+        private void FinishSequence()
+        {
+            _currentProcessEnumerator.Dispose();
+            _currentProcessEnumerator = null;
+            _index = _processCount;
+            FinishProcess();
         }
 
         private float CalculateProgress()

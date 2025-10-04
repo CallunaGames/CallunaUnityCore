@@ -19,7 +19,7 @@ namespace Calluna.Process
         {
             _process = process;
             _processSourceName = processSourceName;
-            _process.Status.OnChanged += OnStatusChanged;
+            _process.Status.OnChangedWithValues += OnStatusChanged;
             _loggerTypeHexCode = _whiteHexcode;
             _statusHexCode = _whiteHexcode;
             _runningProcessLogFrequency = _defaultLogFrequency;
@@ -44,13 +44,13 @@ namespace Calluna.Process
 
         public void Dispose()
         {
-            _process.Status.OnChanged -= OnStatusChanged;
+            _process.Status.OnChangedWithValues -= OnStatusChanged;
         }
 
-        private void OnStatusChanged()
+        private void OnStatusChanged(ProcessStatus formerValue, ProcessStatus newValue)
         {
             Log();
-            if (_process.IsRunning)
+            if (formerValue is not ProcessStatus.Running && newValue is ProcessStatus.Running)
             {
                 UpdateLogTime();
             }
