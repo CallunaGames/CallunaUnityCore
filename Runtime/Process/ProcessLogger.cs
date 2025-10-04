@@ -10,23 +10,23 @@ namespace Calluna.Process
         
         private readonly float _runningProcessLogFrequency;
         private readonly Process _process;
-        private readonly string _sourceName;
+        private readonly string _processSourceName;
         private readonly string _loggerTypeHexCode;
         private readonly string _statusHexCode;
         private float _nextLogTime = float.MaxValue;
 
-        public ProcessLogger(Process process, string sourceName)
+        public ProcessLogger(Process process, string processSourceName)
         {
             _process = process;
-            _sourceName = sourceName;
+            _processSourceName = processSourceName;
             _process.Status.OnChanged += OnStatusChanged;
             _loggerTypeHexCode = _whiteHexcode;
             _statusHexCode = _whiteHexcode;
             _runningProcessLogFrequency = _defaultLogFrequency;
         }
 
-        public ProcessLogger(Process process, string sourceName, float runningProcessLogFrequency, Color loggerTypeColor, Color statusColor) :
-            this(process, sourceName)
+        public ProcessLogger(Process process, string processSourceName, float runningProcessLogFrequency, Color loggerTypeColor, Color statusColor) :
+            this(process, processSourceName)
         {
             _runningProcessLogFrequency = runningProcessLogFrequency;
             _loggerTypeHexCode = ColorUtility.ToHtmlStringRGB(loggerTypeColor);
@@ -60,7 +60,7 @@ namespace Calluna.Process
         {
             string progress = _process.IsRunning ? $" ({(int)(_process.Progress.Value * 100)}%)" : string.Empty;
             Debug.Log(
-                $"<color=#{_loggerTypeHexCode}>[{_sourceName}]</color> {_process.Name.Value} <color=#{_statusHexCode}>({_process.Status.Value}{progress})</color>");
+                $"<color=#{_loggerTypeHexCode}>[{_processSourceName}]</color> {_process.Name.Value} <color=#{_statusHexCode}>({_process.Status.Value}{progress})</color>");
         }
 
         private void UpdateLogTime()
