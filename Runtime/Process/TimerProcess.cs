@@ -5,7 +5,7 @@ namespace Calluna.Process
     public class TimerProcess : ControllableProcessBase
     {
         private readonly float _duration;
-        private float _targetTime = float.MinValue;
+        private float _targetTime;
 
         public TimerProcess(float duration)
         {
@@ -25,7 +25,7 @@ namespace Calluna.Process
 
         protected override void DoTick()
         {
-            if (Time.time > _targetTime)
+            if (Time.time >= _targetTime)
             {
                 FinishProcess();
             }
@@ -38,7 +38,8 @@ namespace Calluna.Process
 
         protected override void UpdateProgress()
         {
-            _progress.Value = 1 - (_targetTime - Time.time)/_duration;
+            float timeLeft = _targetTime - Time.time;
+            _progress.Value = 1 - timeLeft/_duration;
         }
     }
 }

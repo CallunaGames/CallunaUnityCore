@@ -10,24 +10,28 @@ namespace Calluna.Process
         private readonly Observable<Process> _currentProcess = new();
         private ControllableProcess _currentControllableProcess;
 
+        private void Update()
+        {
+            TickCurrentProcess();
+        }
+
+        private void OnDestroy()
+        {
+            TryAbortCurrentProcess();
+        }
+        
         public void Process(ControllableProcess process)
         {
             if (_currentControllableProcess is { IsRunning: true })
             {
                 throw new InvalidOperationException("Please abort the current process before starting the next.");
             }
-
-            if (_currentControllableProcess != null)
-            {
-                Clean();
-            }
-
-            _currentControllableProcess = process;
-            _currentProcess.Value = process;
-            _currentControllableProcess.Start();
+            
+            SetProcess(process);
+            _currentControllableProcess?.Start();
         }
 
-        public void StopProcess()
+        public void AbortCurrentProcess()
         {
             if (_currentControllableProcess is not { IsRunning: true })
             {
@@ -39,7 +43,7 @@ namespace Calluna.Process
             Clean();
         }
 
-        private void Update()
+        private void TickCurrentProcess()
         {
             if (_currentControllableProcess is { IsRunning: true })
             {
@@ -47,19 +51,23 @@ namespace Calluna.Process
             }
         }
 
-        private void OnDestroy()
+        private void TryAbortCurrentProcess()
         {
             if (_currentControllableProcess is { IsRunning: true })
             {
                 _currentControllableProcess.Abort();
             }
-            Clean();
         }
 
         private void Clean()
         {
-            _currentProcess.Value = null;
-            _currentControllableProcess = null;
+            SetProcess(null);
+        }
+
+        private void SetProcess(ControllableProcess process)
+        {
+            _currentProcess.Value = process;
+            _currentControllableProcess = process;
         }
     }
 }

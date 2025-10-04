@@ -4,10 +4,10 @@ namespace Calluna.Process
 {
     public class ProcessorLogger : MonoBehaviour
     {
-        [SerializeField, Header("Options")] private Color _loggerTypeColor = Color.blue;
-        [SerializeField] private Color _statusColor = Color.white;
+        [SerializeField, Header("Options")] private string _loggerName;
         [SerializeField] private float _runningProcessLogFrequency = 0.5f;
-        [SerializeField] private string _loggerName;
+        [SerializeField, Header("Text colors")] private Color _loggerTypeColor = Color.blue;
+        [SerializeField] private Color _statusColor = Color.white;
         [SerializeField, Header("Dependencies")] private Processor _processor;
 
         private ProcessLogger _logger;
