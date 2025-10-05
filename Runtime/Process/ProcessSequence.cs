@@ -78,9 +78,9 @@ namespace Calluna.Process
             }
         }
 
-        protected override void UpdateProgress()
+        protected override float GetProgress()
         {
-            _progress.Value = _processCount > 0 ? CalculateProgress() : 0;
+            return _processCount > 0 ? CalculateProgress() : 0;
         }
 
         private void FinishSequence()

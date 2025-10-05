@@ -25,7 +25,7 @@ namespace Calluna.Process
             }
             
             DoTick();
-            UpdateProgress();
+            _progress.Value = GetProgress();
         }
 
         public void Abort()
@@ -56,6 +56,6 @@ namespace Calluna.Process
         protected abstract void DoStart();
         protected abstract void DoTick();
         protected abstract void DoAbort();
-        protected abstract void UpdateProgress();
+        protected abstract float GetProgress();
     }
 }

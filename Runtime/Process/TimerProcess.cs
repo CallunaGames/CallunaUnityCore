@@ -36,10 +36,10 @@ namespace Calluna.Process
             _targetTime = float.MinValue;
         }
 
-        protected override void UpdateProgress()
+        protected override float GetProgress()
         {
             float timeLeft = _targetTime - Time.time;
-            _progress.Value = 1 - timeLeft/_duration;
+            return 1 - timeLeft/_duration;
         }
     }
 }
