@@ -1,7 +1,7 @@
 {
   "name": "com.calluna.core",
   "version": "0.0.1",
-  "displayName": "Calluna Core",
+  "displayName": "Calluna Unity Core",
   "description": "The core scripts of Calluna Games' Unity projects",
   "unity": "6000.0",
   "unityRelease": "",
