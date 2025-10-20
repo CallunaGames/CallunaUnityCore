@@ -1,12 +1,12 @@
 {
   "name": "com.calluna.core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "Calluna Unity Core",
   "description": "The core scripts of Calluna Games' Unity projects",
   "unity": "6000.33",
   "unityRelease": "",
   "documentationUrl": "https://github.com/CallunaGames/CallunaUnityCore",
-  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/commits/v1.0.0",
+  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/commits/v1.0.1",
   "licensesUrl": "",
   "dependencies": {
     
