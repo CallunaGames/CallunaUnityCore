@@ -17,6 +17,8 @@ namespace Calluna
             }
         }
 
+        public bool HasValue => Value != null;
+
         private T _value;
 
         public void SetValueWithoutNotify(T newValue)
