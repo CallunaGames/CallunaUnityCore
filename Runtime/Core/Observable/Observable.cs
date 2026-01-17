@@ -1,9 +1,15 @@
 namespace Calluna
 {
-    public class Observable<T> : ReadonlyObservable<T>
+    public abstract class Observable
+    {
+        public abstract event ValueChanged OnChanged;
+        public delegate void ValueChanged();
+    }
+    
+    public class Observable<T> : Observable, ReadonlyObservable<T>
     {
         public event ValueChangedWithValues OnChangedWithValues;
-        public event ValueChanged OnChanged;
+        public override event ValueChanged OnChanged;
 
         public T Value
         {
@@ -30,6 +36,5 @@ namespace Calluna
         public static implicit operator T(Observable<T> value) => value.Value;
         
         public delegate void ValueChangedWithValues(T formerValue, T newValue);
-        public delegate void ValueChanged();
     }
 }
