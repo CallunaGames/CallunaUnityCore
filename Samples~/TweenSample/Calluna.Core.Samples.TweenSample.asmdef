@@ -1,0 +1,16 @@
+{
+    "name": "Calluna.Core.Samples.TweenSample",
+    "rootNamespace": "Calluna.Core.Samples.TweenSample",
+    "references": [
+        "GUID:fb92ad7c22f767448a052126eb8fa706"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,12 +1,12 @@
 {
   "name": "com.calluna.core",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "displayName": "Calluna Unity Core",
   "description": "The core scripts of Calluna Games' Unity projects",
   "unity": "6000.33",
   "unityRelease": "",
   "documentationUrl": "https://github.com/CallunaGames/CallunaUnityCore",
-  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/compare/v1.0.7...v1.0.8",
+  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/compare/v1.0.8...v1.0.9",
   "licensesUrl": "",
   "dependencies": {
     
@@ -16,6 +16,11 @@
       "displayName": "Observable Test",
       "description": "A showcase how to use Observable Values",
       "path": "Samples~/ObservableSample"
+    },
+    {
+      "displayName": "Tween Test",
+      "description": "A showcase how to use Tween functions",
+      "path": "Samples~/TweenSample"
     }
   ],
   "keywords": [
