@@ -33,8 +33,10 @@ namespace Calluna
                 return false;
             }
             
-            StopCoroutine(coroutines.Routine);
-            StopCoroutine(coroutines.RemoveRoutine);
+            if(coroutines.Routine != null)
+                StopCoroutine(coroutines.Routine);
+            if(coroutines.RemoveRoutine != null)
+                StopCoroutine(coroutines.RemoveRoutine);
             return true;
         }
 
