@@ -20,15 +20,12 @@ namespace Calluna
 
         protected override bool CalculateValue(IEnumerable<bool> values)
         {
-            switch (_mode)
+            return _mode switch
             {
-                case Mode.Any:
-                    return values.Any(v => v);
-                case Mode.All:
-                    return values.All(v => v);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                Mode.Any => values.Any(v => v),
+                Mode.All => values.All(v => v),
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
         
         public enum Mode
