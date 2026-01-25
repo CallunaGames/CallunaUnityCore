@@ -1,12 +1,12 @@
 {
   "name": "com.calluna.core",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "displayName": "Calluna Unity Core",
   "description": "The core scripts of Calluna Games' Unity projects",
   "unity": "6000.33",
   "unityRelease": "",
   "documentationUrl": "https://github.com/CallunaGames/CallunaUnityCore",
-  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/compare/v1.0.10...v1.0.11",
+  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/compare/v1.0.11...v1.0.12",
   "licensesUrl": "",
   "dependencies": {
     
@@ -31,6 +31,11 @@
       "displayName": "Coroutine Helper Test",
       "description": "A showcase how to use the CoroutineHelper",
       "path": "Samples~/CoroutineHelperSample"
+    },
+    {
+      "displayName": "Accumulating Value Test",
+      "description": "A showcase how to use the different accumulating value classes",
+      "path": "Samples~/AccumulatingValueSample"
     }
   ],
   "keywords": [
