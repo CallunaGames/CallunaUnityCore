@@ -61,9 +61,10 @@ namespace Calluna
         public bool Remove(TValue item)
         {
             int index = _items.IndexOf(item);
-            if (index < 0)
+            if (index >= 0)
             {
-                RemoveAt(index);
+                _items.RemoveAt(index);
+                OnItemRemoved?.Invoke(item, index);
                 return true;
             }
             return false;
@@ -82,13 +83,9 @@ namespace Calluna
 
         public void RemoveAt(int index)
         {
-            RemoveInner(_items[index], index);
-        }
-
-        private void RemoveInner(TValue item, int index)
-        {
+            TValue value = _items[index];
             _items.RemoveAt(index);
-            OnItemRemoved?.Invoke(item, index);
+            OnItemRemoved?.Invoke(value, index);
         }
 
         private void Replace(TValue item, int index)
