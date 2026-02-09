@@ -95,7 +95,7 @@ namespace Calluna
         {
             TValue formerItem = _items[index];
             _items[index] = item;
-            OnItemReplaced?.Invoke(formerItem, item, index);
+            OnItemReplaced?.Invoke(item, formerItem, index);
         }
 
         public TValue this[int index]
