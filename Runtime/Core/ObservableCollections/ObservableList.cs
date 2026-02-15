@@ -1,6 +1,6 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Calluna
 {
@@ -11,6 +11,7 @@ namespace Calluna
         public event ItemChangeEvent<TValue> OnItemAdded;
         public event ItemChangeEvent<TValue> OnItemRemoved;
         public event ItemReplaceEvent<TValue> OnItemReplaced;
+        public event ItemSwapEvent<TValue> OnItemsSwapped;
 
         int ICollection<TValue>.Count => _items.Count;
         int IReadOnlyCollection<TValue>.Count => _items.Count;
@@ -86,6 +87,18 @@ namespace Calluna
             TValue value = _items[index];
             _items.RemoveAt(index);
             OnItemRemoved?.Invoke(value, index);
+        }
+
+        public void Swap(int index1, int index2)
+        {
+            if (index1 >= _items.Count || index2 >= _items.Count)
+                throw new ArgumentException("The provided indices need to be in range of the collection");
+            
+            TValue item1 = _items[index1];
+            TValue item2 = _items[index2];
+            _items[index1] = item2;
+            _items[index2] = item1;
+            OnItemsSwapped?.Invoke(item2, index1, item1, index2);
         }
 
         private void Replace(TValue item, int index)
