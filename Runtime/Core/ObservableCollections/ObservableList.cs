@@ -1,6 +1,6 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Calluna
 {
@@ -11,6 +11,7 @@ namespace Calluna
         public event ItemChangeEvent<TValue> OnItemAdded;
         public event ItemChangeEvent<TValue> OnItemRemoved;
         public event ItemReplaceEvent<TValue> OnItemReplaced;
+        public event ItemSwapEvent<TValue> OnItemsSwapped;
 
         public int Count => _items.Count;
         int ICollection<TValue>.Count => Count;
@@ -62,9 +63,10 @@ namespace Calluna
         public bool Remove(TValue item)
         {
             int index = _items.IndexOf(item);
-            if (index < 0)
+            if (index >= 0)
             {
-                RemoveAt(index);
+                _items.RemoveAt(index);
+                OnItemRemoved?.Invoke(item, index);
                 return true;
             }
 
@@ -84,9 +86,23 @@ namespace Calluna
 
         public void RemoveAt(int index)
         {
-            RemoveInner(_items[index], index);
+            TValue value = _items[index];
+            _items.RemoveAt(index);
+            OnItemRemoved?.Invoke(value, index);
         }
 
+        public void Swap(int index1, int index2)
+        {
+            if (index1 >= _items.Count || index2 >= _items.Count)
+                throw new ArgumentException("The provided indices need to be in range of the collection");
+            
+            TValue item1 = _items[index1];
+            TValue item2 = _items[index2];
+            _items[index1] = item2;
+            _items[index2] = item1;
+            OnItemsSwapped?.Invoke(item2, index1, item1, index2);
+        }
+        
         public void OverrideWith(IEnumerable<TValue> items)
         {
             using IEnumerator<TValue> e = items.GetEnumerator();
@@ -101,7 +117,7 @@ namespace Calluna
                 i++;
             }
 
-            while (_items.Count > i + 1)
+            while (_items.Count > i)
             {
                 RemoveAt(i);
             }
@@ -110,12 +126,6 @@ namespace Calluna
             {
                 Add(e.Current);
             }
-        }
-
-        private void RemoveInner(TValue item, int index)
-        {
-            _items.RemoveAt(index);
-            OnItemRemoved?.Invoke(item, index);
         }
 
         private void Replace(TValue item, int index)

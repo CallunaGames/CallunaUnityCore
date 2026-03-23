@@ -72,6 +72,26 @@ namespace Calluna
             
         }
 
+        public static Func<float, float> GetEaseFunction(TweenType tweenType)
+        {
+            switch (tweenType)
+            {
+                case TweenType.EaseInOutSine: return EaseInOutSine;
+                case TweenType.EaseInSine: return EaseInSine;
+                case TweenType.EaseOutSine: return EaseOutSine;
+                
+                case TweenType.EaseInOutCubic: return EaseInOutCubic;
+                case TweenType.EaseInCubic: return EaseInCubic;
+                case TweenType.EaseOutCubic: return EaseOutCubic;
+                
+                case TweenType.EaseInOutBack: return EaseInOutBack;
+                case TweenType.EaseInBack: return EaseInBack;
+                case TweenType.EaseOutBack: return EaseOutBack;
+                
+                default: throw new ArgumentOutOfRangeException();
+            }
+        }
+
         private static void ValidateValue(float value)
         {
             if(value < 0.0f || value > 1.0f)
