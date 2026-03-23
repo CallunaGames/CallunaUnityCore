@@ -12,13 +12,14 @@ namespace Calluna
         public event ItemChangeEvent<TValue> OnItemRemoved;
         public event ItemReplaceEvent<TValue> OnItemReplaced;
 
-        int ICollection<TValue>.Count => _items.Count;
-        int IReadOnlyCollection<TValue>.Count => _items.Count;
+        public int Count => _items.Count;
+        int ICollection<TValue>.Count => Count;
+        int IReadOnlyCollection<TValue>.Count => Count;
 
         public ObservableList(IEnumerable<TValue> values) => _items = new List<TValue>(values);
         public ObservableList() => _items = new List<TValue>();
         public ObservableList(int capacity) => _items = new List<TValue>(capacity);
-        
+
         private readonly List<TValue> _items;
 
         public IEnumerator<TValue> GetEnumerator()
@@ -40,7 +41,7 @@ namespace Calluna
 
         public void Clear()
         {
-            for (int i = _items.Count - 1; i >= 0 ; i--)
+            for (int i = _items.Count - 1; i >= 0; i--)
             {
                 TValue value = _items[i];
                 _items.RemoveAt(i);
@@ -66,6 +67,7 @@ namespace Calluna
                 RemoveAt(index);
                 return true;
             }
+
             return false;
         }
 
@@ -85,6 +87,31 @@ namespace Calluna
             RemoveInner(_items[index], index);
         }
 
+        public void OverrideWith(IEnumerable<TValue> items)
+        {
+            using IEnumerator<TValue> e = items.GetEnumerator();
+
+            int i = 0;
+            int count = _items.Count;
+
+            while (i < count && e.MoveNext())
+            {
+                if (!_items[i].Equals(e.Current))
+                    Replace(e.Current, i);
+                i++;
+            }
+
+            while (_items.Count > i + 1)
+            {
+                RemoveAt(i);
+            }
+
+            while (e.MoveNext())
+            {
+                Add(e.Current);
+            }
+        }
+
         private void RemoveInner(TValue item, int index)
         {
             _items.RemoveAt(index);
@@ -95,7 +122,7 @@ namespace Calluna
         {
             TValue formerItem = _items[index];
             _items[index] = item;
-            OnItemReplaced?.Invoke(formerItem, item, index);
+            OnItemReplaced?.Invoke(item, formerItem, index);
         }
 
         public TValue this[int index]
