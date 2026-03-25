@@ -112,8 +112,7 @@ namespace Calluna
 
             while (i < count && e.MoveNext())
             {
-                if (!_items[i].Equals(e.Current))
-                    Replace(e.Current, i);
+                Replace(e.Current, i);
                 i++;
             }
 
