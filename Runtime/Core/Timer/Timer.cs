@@ -7,8 +7,8 @@ namespace Calluna
     public class Timer : IDisposable
     {
         public event Action OnDone;
-        public float Percentage => Running ? Mathf.Clamp01(Time / _duration) : 1f;
-        public float Time { get; private set; }
+        public float Progress => Running ? Mathf.Clamp01(Elapsed / _duration) : 1f;
+        public float Elapsed { get; private set; }
         public bool Running { get; private set; }
         
         private readonly CoroutineHelper _coroutineHelper;
@@ -27,17 +27,17 @@ namespace Calluna
             StopTimer();
         }
 
-        public Timer StartWith(float seconds, bool unscaled = false)
+        public Timer StartWith(float duration, bool unscaled = false)
         {
-            if (seconds <= 0)
+            if (duration <= 0)
             {
-                throw new ArgumentException("Seconds must be greater than 0.");
+                throw new ArgumentException("Duration must be greater than 0.");
             }
-            
+
             StopTimer();
-            _duration = seconds;
+            _duration = duration;
             Running = true;
-            _coroutineHelper.StartWithID(StartTimer(unscaled), _id);
+            _coroutineHelper.StartWithID(RunTimer(unscaled), _id);
             return this;
         }
 
@@ -45,15 +45,15 @@ namespace Calluna
         {
             _coroutineHelper.StopWithID(_id);
             _duration = 0;
-            Time = 0;
+            Elapsed = 0;
             Running = false;
         }
 
-        private IEnumerator StartTimer(bool unscaled)
+        private IEnumerator RunTimer(bool unscaled)
         {
-            while (Time < _duration)
+            while (Elapsed < _duration)
             {
-                Time += unscaled ? UnityEngine.Time.unscaledDeltaTime : UnityEngine.Time.deltaTime;
+                Elapsed += unscaled ? UnityEngine.Time.unscaledDeltaTime : UnityEngine.Time.deltaTime;
                 yield return null;
             }
             

@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
-using Calluna;
 
 namespace Calluna
 {
     public abstract class AccumulatingValue<T>
     {
         public ReadonlyObservable<T> Value => _value;
-        private Dictionary<string, T> _idToValuePart = new Dictionary<string, T>();
+        private readonly Dictionary<string, T> _idToValuePart = new Dictionary<string, T>();
 
-        private Observable<T> _value = new Observable<T>();
+        private readonly Observable<T> _value = new Observable<T>();
 
         public void Set(string id, T value)
         {

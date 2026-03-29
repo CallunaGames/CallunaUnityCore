@@ -22,7 +22,7 @@ namespace Calluna.Core.TimerExample
 
         private void Update()
         {
-            _timerImage.fillAmount = _timer.Percentage;
+            _timerImage.fillAmount = _timer.Progress;
         }
 
         private void OnDestroy()

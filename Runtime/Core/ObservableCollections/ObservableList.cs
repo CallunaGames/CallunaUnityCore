@@ -14,8 +14,8 @@ namespace Calluna
         public event ItemSwapEvent<TValue> OnItemsSwapped;
 
         public int Count => _items.Count;
-        int ICollection<TValue>.Count => Count;
-        int IReadOnlyCollection<TValue>.Count => Count;
+        int ICollection<TValue>.Count => _items.Count;
+        int IReadOnlyCollection<TValue>.Count => _items.Count;
 
         public ObservableList(IEnumerable<TValue> values) => _items = new List<TValue>(values);
         public ObservableList() => _items = new List<TValue>();
@@ -28,10 +28,7 @@ namespace Calluna
             return _items.GetEnumerator();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public void Add(TValue item)
         {
@@ -44,9 +41,9 @@ namespace Calluna
         {
             for (int i = _items.Count - 1; i >= 0; i--)
             {
-                TValue value = _items[i];
+                TValue item = _items[i];
                 _items.RemoveAt(i);
-                OnItemRemoved?.Invoke(value, i);
+                OnItemRemoved?.Invoke(item, i);
             }
         }
 
@@ -86,9 +83,9 @@ namespace Calluna
 
         public void RemoveAt(int index)
         {
-            TValue value = _items[index];
+            TValue item = _items[index];
             _items.RemoveAt(index);
-            OnItemRemoved?.Invoke(value, index);
+            OnItemRemoved?.Invoke(item, index);
         }
 
         public void Swap(int index1, int index2)
@@ -103,6 +100,8 @@ namespace Calluna
             OnItemsSwapped?.Invoke(item2, index1, item1, index2);
         }
         
+        // Walk both sequences in lock-step: replace overlapping positions, then
+        // remove any surplus items from the tail, then append any remaining new items.
         public void OverrideWith(IEnumerable<TValue> items)
         {
             using IEnumerator<TValue> e = items.GetEnumerator();

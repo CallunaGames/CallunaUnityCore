@@ -7,7 +7,7 @@ namespace Calluna
 {
     public class CoroutineHelper : MonoBehaviour
     {
-        private Dictionary<string, Routines> _coroutines = new Dictionary<string, Routines>();
+        private Dictionary<string, CoroutinePair> _coroutines = new Dictionary<string, CoroutinePair>();
         
         private void OnDestroy()
         {
@@ -22,13 +22,13 @@ namespace Calluna
             }
 
             Coroutine coroutine = StartCoroutine(enumerator);
-            Coroutine removeCoroutine = StartCoroutine(StartRemove(coroutine, id));
-            _coroutines[id] = new Routines() { RemoveRoutine = removeCoroutine, Routine = coroutine };
+            Coroutine removeCoroutine = StartCoroutine(WaitThenRemove(coroutine, id));
+            _coroutines[id] = new CoroutinePair() { RemoveRoutine = removeCoroutine, Routine = coroutine };
         }
 
         public bool StopWithID(string id)
         {
-            if (!_coroutines.Remove(id, out Routines coroutines))
+            if (!_coroutines.Remove(id, out CoroutinePair coroutines))
             {
                 return false;
             }
@@ -40,10 +40,7 @@ namespace Calluna
             return true;
         }
 
-        public bool HasRoutineWith(string id)
-        {
-            return _coroutines.ContainsKey(id);
-        }
+        public bool HasRoutineWith(string id) => _coroutines.ContainsKey(id);
 
         public void ReplaceWithID(IEnumerator enumerator, string id)
         {
@@ -51,13 +48,14 @@ namespace Calluna
             StartWithID(enumerator, id);
         }
 
-        private IEnumerator StartRemove(Coroutine routine, string id)
+        // Waits for 'routine' to complete naturally, then removes it from the tracking dictionary.
+        private IEnumerator WaitThenRemove(Coroutine routine, string id)
         {
             yield return routine;
             StopWithID(id);
         }
 
-        private struct Routines
+        private struct CoroutinePair
         {
             public Coroutine Routine;
             public Coroutine RemoveRoutine;

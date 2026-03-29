@@ -22,8 +22,7 @@ namespace Calluna
         {
             if (ReferenceEquals(this, obj)) return true;
             if (ReferenceEquals(null, obj)) return false;
-            if (obj is string stringObj && Id == stringObj) return true;
-            return false;
+            return obj is string stringObj && Id == stringObj;
         }
 
         public override int GetHashCode()

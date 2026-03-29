@@ -23,13 +23,13 @@ namespace Calluna
             }
         }
 
-        public bool HasValue => Value != null;
+        public bool HasValue => _value != null;
 
         private T _value;
 
-        public void SetValueWithoutNotify(T newValue)
+        public void SetValueWithoutNotify(T value)
         {
-            _value = newValue;
+            _value = value;
         }
         
         public static implicit operator Observable<T>(T value) => new(){_value = value};

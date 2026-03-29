@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Calluna
 {
@@ -8,12 +7,7 @@ namespace Calluna
     {
         private Mode _mode;
 
-        public AccumulatingBoolValue()
-        {
-            _mode = Mode.Any;
-        }
-
-        public AccumulatingBoolValue(Mode mode)
+        public AccumulatingBoolValue(Mode mode = Mode.Any)
         {
             _mode = mode;
         }
@@ -22,12 +16,12 @@ namespace Calluna
         {
             return _mode switch
             {
-                Mode.Any => values.Any(v => v),
-                Mode.All => values.All(v => v),
+                Mode.Any => EnumerableUtility.Any(values),
+                Mode.All => EnumerableUtility.All(values),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
-        
+
         public enum Mode
         {
             Any = 1,

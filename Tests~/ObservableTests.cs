@@ -91,6 +91,22 @@ namespace Calluna.Core.Tests
             Assert.AreEqual(value.FormerValue, result);
         }
 
+        [Test, Description("HasValue when Value is non-null reference => Returns true?")]
+        public void Observable_HasValue_NonNullValue_ReturnsTrue()
+        {
+            var observable = new Observable<string>();
+            observable.Value = "hello";
+            Assert.IsTrue(observable.HasValue);
+        }
+
+        [Test, Description("HasValue when Value is null => Returns false?")]
+        public void Observable_HasValue_NullValue_ReturnsFalse()
+        {
+            var observable = new Observable<string>();
+            observable.Value = null;
+            Assert.IsFalse(observable.HasValue);
+        }
+
         public struct TestValues<T>
         {
             public T FormerValue { get; set; }

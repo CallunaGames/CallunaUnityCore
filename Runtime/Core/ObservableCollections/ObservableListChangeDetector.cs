@@ -6,7 +6,7 @@ namespace Calluna
     {
         public event Action OnChanged;
         
-        private ReadonlyObservableList<TValue> _list;
+        private readonly ReadonlyObservableList<TValue> _list;
         
         public ObservableListChangeDetector(ReadonlyObservableList<TValue> list)
         {
@@ -25,24 +25,10 @@ namespace Calluna
             _list.OnItemsSwapped -= OnItemsSwapped;
         }
 
-        private void OnItemChanged(TValue item, int index)
-        {
-            InvokeOnChanged();
-        }
+        private void OnItemChanged(TValue item, int index) => OnChanged?.Invoke();
 
-        private void OnItemReplaced(TValue nextitem, TValue formeritem, int index)
-        {
-            InvokeOnChanged();
-        }
+        private void OnItemReplaced(TValue nextItem, TValue formerItem, int index) => OnChanged?.Invoke();
 
-        private void OnItemsSwapped(TValue newIndex1Item, int index1, TValue item2, int newIndex2Item)
-        {
-            InvokeOnChanged();
-        }
-
-        private void InvokeOnChanged()
-        {
-            OnChanged?.Invoke();
-        }
+        private void OnItemsSwapped(TValue newIndex1Item, int index1, TValue newIndex2Item, int index2) => OnChanged?.Invoke();
     }
 }
