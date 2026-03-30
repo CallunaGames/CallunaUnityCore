@@ -21,7 +21,7 @@ namespace Calluna.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            Object.DestroyImmediate(_gameObject);
+            UnityEngine.Object.DestroyImmediate(_gameObject);
         }
 
         // ---- HasRoutineWith ----

@@ -24,7 +24,7 @@ namespace Calluna.Core.Tests
         public void TearDown()
         {
             _timer.Dispose();
-            Object.DestroyImmediate(_gameObject);
+            UnityEngine.Object.DestroyImmediate(_gameObject);
         }
 
         // ---- Input validation ----

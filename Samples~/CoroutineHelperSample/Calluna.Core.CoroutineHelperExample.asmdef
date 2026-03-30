@@ -2,7 +2,6 @@
     "name": "Calluna.Core.CoroutineHelperExample",
     "rootNamespace": "Calluna.Core.CoroutineHelperExample",
     "references": [
-        "GUID:5ca4d93db7579734a800e8efb2ee97fc",
         "GUID:fb92ad7c22f767448a052126eb8fa706"
     ],
     "includePlatforms": [],

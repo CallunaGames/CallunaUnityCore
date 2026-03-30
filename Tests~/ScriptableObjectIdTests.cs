@@ -204,15 +204,15 @@ namespace Calluna.Core.Tests
             Object.DestroyImmediate(a);
         }
 
-        [Test, Description("GetHashCode => Two instances with the same Id return different hash codes (identity-based, not string-based)?")]
+        [Test, Description("GetHashCode => Two instances with the same Id return equal hash codes (Id-string-based)?")]
         [TestCase("alpha")]
         [TestCase("same-id")]
         [TestCase("")]
-        public void ScriptableObjectId_GetHashCode_DifferentInstancesSameId_ReturnDifferentHashCodes(string id)
+        public void ScriptableObjectId_GetHashCode_DifferentInstancesSameId_ReturnEqualHashCodes(string id)
         {
             var a = CreateWithId(id);
             var b = CreateWithId(id);
-            Assert.AreNotEqual(a.GetHashCode(), b.GetHashCode());
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
             Object.DestroyImmediate(a);
             Object.DestroyImmediate(b);
         }
