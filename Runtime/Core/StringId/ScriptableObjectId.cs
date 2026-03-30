@@ -27,7 +27,7 @@ namespace Calluna
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return Id?.GetHashCode() ?? base.GetHashCode();
         }
 
         public static bool operator ==(ScriptableObjectId left, ScriptableObjectId right)

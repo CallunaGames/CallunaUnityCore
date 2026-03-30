@@ -402,6 +402,79 @@ namespace Calluna.Core.Tests
             }
         }
 
+        [Test, Description("OverrideWith empty sequence => Count becomes 0?")]
+        [TestCase(new int[] { 1, 2, 3 })]
+        [TestCase(new int[] { 5 })]
+        [TestCase(new int[] { 10, 20 })]
+        public void ObservableList_OverrideWith_EmptySequence_CountBecomesZero(int[] initial)
+        {
+            var list = new ObservableList<int>(initial);
+            list.OverrideWith(System.Array.Empty<int>());
+            Assert.AreEqual(0, list.Count);
+        }
+
+        [Test, Description("OverrideWith empty sequence => OnItemRemoved fires once per original item with correct item and index?")]
+        [TestCase(new int[] { 1, 2, 3 })]
+        [TestCase(new int[] { 5 })]
+        [TestCase(new int[] { 10, 20 })]
+        public void ObservableList_OverrideWith_EmptySequence_OnItemRemovedFiredForEachItem(int[] initial)
+        {
+            var list = new ObservableList<int>(initial);
+            var removedItems = new System.Collections.Generic.List<int>();
+            var removedIndices = new System.Collections.Generic.List<int>();
+
+            ItemChangeEvent<int> listener = (item, index) =>
+            {
+                removedItems.Add(item);
+                removedIndices.Add(index);
+            };
+            list.OnItemRemoved += listener;
+            list.OverrideWith(System.Array.Empty<int>());
+            list.OnItemRemoved -= listener;
+
+            Assert.AreEqual(initial.Length, removedItems.Count);
+            // OverrideWith calls RemoveAt(0) each pass, so each item is reported at index 0
+            for (int i = 0; i < initial.Length; i++)
+            {
+                Assert.AreEqual(initial[i], removedItems[i]);
+                Assert.AreEqual(0, removedIndices[i]);
+            }
+        }
+
+        [Test, Description("OverrideWith empty sequence => OnItemReplaced does not fire?")]
+        [TestCase(new int[] { 1, 2, 3 })]
+        [TestCase(new int[] { 5 })]
+        [TestCase(new int[] { 10, 20 })]
+        public void ObservableList_OverrideWith_EmptySequence_OnItemReplacedNotFired(int[] initial)
+        {
+            var list = new ObservableList<int>(initial);
+            bool replacedFired = false;
+
+            ItemReplaceEvent<int> listener = (newItem, formerItem, index) => { replacedFired = true; };
+            list.OnItemReplaced += listener;
+            list.OverrideWith(System.Array.Empty<int>());
+            list.OnItemReplaced -= listener;
+
+            Assert.IsFalse(replacedFired);
+        }
+
+        [Test, Description("OverrideWith empty sequence => OnItemAdded does not fire?")]
+        [TestCase(new int[] { 1, 2, 3 })]
+        [TestCase(new int[] { 5 })]
+        [TestCase(new int[] { 10, 20 })]
+        public void ObservableList_OverrideWith_EmptySequence_OnItemAddedNotFired(int[] initial)
+        {
+            var list = new ObservableList<int>(initial);
+            bool addedFired = false;
+
+            ItemChangeEvent<int> listener = (item, index) => { addedFired = true; };
+            list.OnItemAdded += listener;
+            list.OverrideWith(System.Array.Empty<int>());
+            list.OnItemAdded -= listener;
+
+            Assert.IsFalse(addedFired);
+        }
+
         [Test, Description("GetEnumerator => Iterates all items in order?")]
         public void ObservableList_GetEnumerator_IteratesAllItemsInOrder<T>(
             [ValueSource(nameof(_testValues))] TestValues<T> values)

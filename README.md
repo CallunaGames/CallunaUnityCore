@@ -89,7 +89,9 @@ delegate void ItemSwapEvent<TValue>(TValue newIndex1Item, int index1, TValue new
 
 #### Create and Expose as Readonly
 ```c#
-private ObservableList<TValue> _list = new ObservableList<TValue>();
+private ObservableList<TValue> _list = new ObservableList<TValue>();          // empty
+private ObservableList<TValue> _listWithCapacity = new ObservableList<TValue>(16);         // pre-allocated
+private ObservableList<TValue> _listFromExisting = new ObservableList<TValue>(existingCollection); // copy
 public ReadonlyObservableList<TValue> List => _list;
 ```
 
@@ -234,8 +236,11 @@ class Timer : IDisposable
 CoroutineHelper coroutineHelper = gameObject.AddComponent<CoroutineHelper>();
 Timer timer = new Timer(coroutineHelper);
 timer.OnDone += () => { Debug.Log("Done!"); };
-timer.StartWith(seconds: 3f);
-timer.StartWith(seconds: 3f, unscaled: true); // uses unscaled delta time
+timer.StartWith(duration: 3f);
+timer.StartWith(duration: 3f, unscaled: true); // uses unscaled delta time
+// StartWith returns the Timer instance for fluent chaining
+timer.OnDone += () => { Debug.Log("Done!"); };
+Timer t = new Timer(coroutineHelper).StartWith(duration: 5f);
 ```
 
 #### Read Progress
@@ -321,6 +326,22 @@ int   total   = EnumerableUtility.Sum(new[] { 1, 2, 3 });        // 6
 float product = EnumerableUtility.Product(new[] { 2f, 3f, 4f }); // 24f
 bool  anyOn   = EnumerableUtility.Any(new[] { false, true });     // true
 bool  allOn   = EnumerableUtility.All(new[] { true, true });      // true
+```
+
+---
+
+## DontDestroyOnLoad
+`DontDestroyOnLoad` is a `MonoBehaviour` that calls `DontDestroyOnLoad` on its `GameObject` during `Awake`, keeping the object alive across scene loads. Attach it to any root `GameObject` that should persist.
+
+```c#
+class DontDestroyOnLoad : MonoBehaviour
+```
+
+### Usage
+
+```c#
+// In the Inspector: add the DontDestroyOnLoad component to a root GameObject.
+// No code required — the component handles persistence automatically on Awake.
 ```
 
 ---

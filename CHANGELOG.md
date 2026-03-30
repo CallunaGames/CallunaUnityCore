@@ -1,3 +1,8 @@
+## [1.2.0] - 2026-03-30
+
+### Breaking Changes
+- `ScriptableObjectId.GetHashCode()` now returns a hash derived from the `Id` string rather than the object's identity (reference). Callers that use `ScriptableObjectId` instances as dictionary keys or in `HashSet<T>` collections will observe different bucket assignments after this change — existing serialized or runtime dictionaries keyed on `ScriptableObjectId` must be rebuilt.
+
 ## [1.0.20] - 2026-03-29
 
 ### Breaking Changes

@@ -23,6 +23,7 @@ namespace Calluna
             }
         }
 
+        /// <summary>Returns true if the current value is non-null. Always true for value types.</summary>
         public bool HasValue => _value != null;
 
         private T _value;

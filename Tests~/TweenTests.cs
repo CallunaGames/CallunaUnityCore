@@ -87,6 +87,32 @@ namespace Calluna.Core.Tests
             Assert.Less(result, 1f);
         }
 
+        [Test, Description("EaseInSine => Monotonically increasing at sample points?")]
+        public void Tween_EaseInSine_MonotonicallyIncreasing()
+        {
+            float[] inputs = { 0f, 0.25f, 0.5f, 0.75f, 1f };
+            float previous = -1f;
+            foreach (float t in inputs)
+            {
+                float value = Tween.EaseInSine(t);
+                Assert.GreaterOrEqual(value, previous);
+                previous = value;
+            }
+        }
+
+        [Test, Description("EaseOutSine => Monotonically increasing at sample points?")]
+        public void Tween_EaseOutSine_MonotonicallyIncreasing()
+        {
+            float[] inputs = { 0f, 0.25f, 0.5f, 0.75f, 1f };
+            float previous = -1f;
+            foreach (float t in inputs)
+            {
+                float value = Tween.EaseOutSine(t);
+                Assert.GreaterOrEqual(value, previous);
+                previous = value;
+            }
+        }
+
         [Test, Description("EaseInCubic => Monotonically increasing at sample points?")]
         public void Tween_EaseInCubic_MonotonicallyIncreasing()
         {

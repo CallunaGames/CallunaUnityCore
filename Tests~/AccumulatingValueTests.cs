@@ -90,6 +90,48 @@ namespace Calluna.Core.Tests
             Assert.Throws<ArgumentException>(() => acc.Remove(id));
         }
 
+        [Test, Description("Add duplicate id => Throws ArgumentException?")]
+        [TestCase(1.0f, 2.0f)]
+        [TestCase(0f, 0f)]
+        [TestCase(-1f, 5f)]
+        public void AccumulatingFloatValue_Add_DuplicateId_Throws(float first, float second)
+        {
+            var acc = new AccumulatingFloatValue();
+            acc.Add("a", first);
+            Assert.Throws<ArgumentException>(() => acc.Add("a", second));
+        }
+
+        [Test, Description("Remove missing id => Throws ArgumentException?")]
+        [TestCase("missing")]
+        [TestCase("x")]
+        [TestCase("123")]
+        public void AccumulatingFloatValue_Remove_MissingId_Throws(string id)
+        {
+            var acc = new AccumulatingFloatValue();
+            Assert.Throws<ArgumentException>(() => acc.Remove(id));
+        }
+
+        [Test, Description("Add duplicate id => Throws ArgumentException?")]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void AccumulatingBoolValue_Add_DuplicateId_Throws(bool first, bool second)
+        {
+            var acc = new AccumulatingBoolValue();
+            acc.Add("a", first);
+            Assert.Throws<ArgumentException>(() => acc.Add("a", second));
+        }
+
+        [Test, Description("Remove missing id => Throws ArgumentException?")]
+        [TestCase("missing")]
+        [TestCase("x")]
+        [TestCase("123")]
+        public void AccumulatingBoolValue_Remove_MissingId_Throws(string id)
+        {
+            var acc = new AccumulatingBoolValue();
+            Assert.Throws<ArgumentException>(() => acc.Remove(id));
+        }
+
         [Test, Description("Add entry => Value observable fires OnChanged?")]
         [TestCase(1)]
         [TestCase(-100)]
