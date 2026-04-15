@@ -153,22 +153,39 @@ namespace Calluna.Core.Tests
             Assert.AreEqual(values.ItemA, list[1]);
         }
 
-        [Test, Description("Clear => All items removed and OnItemRemoved fired for each?")]
-        public void ObservableList_Clear_AllItemsRemovedWithEvents<T>(
+        [Test, Description("Clear => Count becomes 0 and OnClean fires once?")]
+        public void ObservableList_Clear_CountBecomesZeroAndOnCleanFires<T>(
             [ValueSource(nameof(_testValues))] TestValues<T> values)
         {
             var list = new ObservableList<T>();
             list.Add(values.ItemA);
             list.Add(values.ItemB);
 
-            int removedCount = 0;
-            ItemChangeEvent<T> listener = (item, index) => { removedCount++; };
+            int cleanCount = 0;
+            System.Action listener = () => { cleanCount++; };
+            list.OnClean += listener;
+            list.Clear();
+            list.OnClean -= listener;
+
+            Assert.AreEqual(0, list.Count);
+            Assert.AreEqual(1, cleanCount);
+        }
+
+        [Test, Description("Clear => OnItemRemoved does not fire?")]
+        public void ObservableList_Clear_OnItemRemovedNotFired<T>(
+            [ValueSource(nameof(_testValues))] TestValues<T> values)
+        {
+            var list = new ObservableList<T>();
+            list.Add(values.ItemA);
+            list.Add(values.ItemB);
+
+            bool removedFired = false;
+            ItemChangeEvent<T> listener = (item, index) => { removedFired = true; };
             list.OnItemRemoved += listener;
             list.Clear();
             list.OnItemRemoved -= listener;
 
-            Assert.AreEqual(0, list.Count);
-            Assert.AreEqual(2, removedCount);
+            Assert.IsFalse(removedFired);
         }
 
         [Test, Description("Constructor(IEnumerable<T>) => Count and contents correct?")]

@@ -1,4 +1,6 @@
-﻿namespace Calluna.Core.Samples.TweenSample
+﻿using Calluna;
+
+namespace Calluna.Core.Samples.TweenSample
 {
     public class BackInTester : TweenTester
     {

@@ -9,6 +9,7 @@ namespace Calluna
         public event ItemChangeEvent<TValue> OnItemRemoved;
         public event ItemReplaceEvent<TValue> OnItemReplaced;
         public event ItemSwapEvent<TValue> OnItemsSwapped;
+        public event Action OnClean;
         public int IndexOf(TValue item);
     }
 }

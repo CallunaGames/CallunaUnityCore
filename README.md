@@ -124,9 +124,11 @@ _list.OnItemAdded += (TValue item, int index) => { };
 _list.OnItemRemoved += (TValue item, int index) => { };
 _list.OnItemReplaced += (TValue newItem, TValue formerItem, int index) => { };
 _list.OnItemsSwapped += (TValue newAt0, int index0, TValue newAt1, int index1) => { };
+_list.OnClean += () => { };  // fires once when Clear() is called; OnItemRemoved is NOT fired per element
 ```
 
 #### Detect Any Change with ObservableListChangeDetector
+`ObservableListChangeDetector` routes all four item events and `OnClean` into a single `OnChanged` event, so you can react to any mutation — including `Clear()` — from one subscription.
 ```c#
 using var detector = new ObservableListChangeDetector<TValue>(_list);
 detector.OnChanged += () => { Debug.Log("List changed"); };

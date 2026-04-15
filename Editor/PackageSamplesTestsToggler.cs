@@ -224,16 +224,26 @@ namespace Game
                 throw new IOException($"Destination already exists: {dst}");
             }
 
-            // Prefer FileUtil for Unity projects (moves .meta too). Fallback to Directory.Move.
-            // FileUtil is internal-ish but available in UnityEditor.
             FileUtil.MoveFileOrDirectory(src, dst);
 
-            // Move .meta if FileUtil didn’t handle it (older Unity versions can be flaky outside Assets)
             var srcMeta = src + ".meta";
             var dstMeta = dst + ".meta";
-            if (File.Exists(srcMeta) && !File.Exists(dstMeta))
+
+            // Never leave a .meta file for a ~ folder — Unity ignores ~ folders entirely,
+            // so a Foo~.meta with no visible Foo~ causes "meta file exists but folder can’t be found" warnings.
+            if (dst.EndsWith("~"))
             {
-                FileUtil.MoveFileOrDirectory(srcMeta, dstMeta);
+                // Hiding: delete the .meta rather than renaming it to Foo~.meta
+                if (File.Exists(srcMeta))
+                    FileUtil.DeleteFileOrDirectory(srcMeta);
+            }
+            else
+            {
+                // Showing: move .meta if FileUtil didn’t handle it; delete any leftover ~.meta
+                if (File.Exists(srcMeta) && !File.Exists(dstMeta))
+                    FileUtil.MoveFileOrDirectory(srcMeta, dstMeta);
+                else if (File.Exists(srcMeta))
+                    FileUtil.DeleteFileOrDirectory(srcMeta);
             }
         }
     }

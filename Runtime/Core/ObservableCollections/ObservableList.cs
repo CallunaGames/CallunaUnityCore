@@ -12,6 +12,7 @@ namespace Calluna
         public event ItemChangeEvent<TValue> OnItemRemoved;
         public event ItemReplaceEvent<TValue> OnItemReplaced;
         public event ItemSwapEvent<TValue> OnItemsSwapped;
+        public event Action OnClean;
 
         public int Count => _items.Count;
         int ICollection<TValue>.Count => _items.Count;
@@ -39,12 +40,8 @@ namespace Calluna
 
         public void Clear()
         {
-            for (int i = _items.Count - 1; i >= 0; i--)
-            {
-                TValue item = _items[i];
-                _items.RemoveAt(i);
-                OnItemRemoved?.Invoke(item, i);
-            }
+            _items.Clear();
+            OnClean?.Invoke();
         }
 
         public bool Contains(TValue item)

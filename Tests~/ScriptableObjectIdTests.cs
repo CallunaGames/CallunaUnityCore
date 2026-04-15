@@ -229,5 +229,97 @@ namespace Calluna.Core.Tests
             Assert.AreEqual(id, a.ToString());
             Object.DestroyImmediate(a);
         }
+
+        // ---- operator== null left-hand side (ScriptableObjectId, ScriptableObjectId) ----
+
+        [Test, Description("operator== null == null => Returns true?")]
+        public void ScriptableObjectId_OperatorEqual_NullLhs_NullRhs_ReturnsTrue()
+        {
+            ScriptableObjectId left = null;
+            ScriptableObjectId right = null;
+            Assert.IsTrue(left == right);
+        }
+
+        [Test, Description("operator== null == nonNull => Returns false?")]
+        [TestCase("alpha")]
+        [TestCase("beta")]
+        [TestCase("")]
+        public void ScriptableObjectId_OperatorEqual_NullLhs_NonNullRhs_ReturnsFalse(string id)
+        {
+            ScriptableObjectId left = null;
+            var right = CreateWithId(id);
+            Assert.IsFalse(left == right);
+            Object.DestroyImmediate(right);
+        }
+
+        // ---- operator== null left-hand side (ScriptableObjectId, string) ----
+
+        [Test, Description("operator== (string) null == null => Returns true?")]
+        public void ScriptableObjectId_OperatorEqualString_NullLhs_NullString_ReturnsTrue()
+        {
+            ScriptableObjectId left = null;
+            string right = null;
+            Assert.IsTrue(left == right);
+        }
+
+        [Test, Description("operator== (string) null == nonNull => Returns false?")]
+        [TestCase("alpha")]
+        [TestCase("beta")]
+        [TestCase("id-123")]
+        public void ScriptableObjectId_OperatorEqualString_NullLhs_NonNullString_ReturnsFalse(string id)
+        {
+            ScriptableObjectId left = null;
+            Assert.IsFalse(left == id);
+        }
+
+        // ---- operator!= null left-hand side (ScriptableObjectId, ScriptableObjectId) ----
+
+        [Test, Description("operator!= null != null => Returns false?")]
+        public void ScriptableObjectId_OperatorNotEqual_NullLhs_NullRhs_ReturnsFalse()
+        {
+            ScriptableObjectId left = null;
+            ScriptableObjectId right = null;
+            Assert.IsFalse(left != right);
+        }
+
+        // ---- operator!= null left-hand side (ScriptableObjectId, string) ----
+
+        [Test, Description("operator!= (string) null != null => Returns false?")]
+        public void ScriptableObjectId_OperatorNotEqualString_NullLhs_NullString_ReturnsFalse()
+        {
+            ScriptableObjectId left = null;
+            string right = null;
+            Assert.IsFalse(left != right);
+        }
+
+        // ---- GetHashCode with null Id ----
+
+        [Test, Description("GetHashCode when Id is null => Does not throw and returns a consistent value?")]
+        public void ScriptableObjectId_GetHashCode_NullId_DoesNotThrowAndIsConsistent()
+        {
+            var a = ScriptableObject.CreateInstance<TestId>();
+            // Id is not set, so it remains null (the default for a serialized string field).
+            int first = -1;
+            int second = -1;
+            Assert.DoesNotThrow(() => first = a.GetHashCode());
+            Assert.DoesNotThrow(() => second = a.GetHashCode());
+            Assert.AreEqual(first, second);
+            Object.DestroyImmediate(a);
+        }
+
+        // ---- Equals(object) with a different ScriptableObjectId instance ----
+
+        [Test, Description("Equals(object) different ScriptableObjectId instance as object => Returns false?")]
+        [TestCase("alpha")]
+        [TestCase("beta")]
+        [TestCase("")]
+        public void ScriptableObjectId_EqualsObject_DifferentScriptableObjectIdInstance_ReturnsFalse(string id)
+        {
+            var a = CreateWithId(id);
+            var b = CreateWithId(id);
+            Assert.IsFalse(a.Equals((object)b));
+            Object.DestroyImmediate(a);
+            Object.DestroyImmediate(b);
+        }
     }
 }

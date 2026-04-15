@@ -1,3 +1,16 @@
+## [1.3.0] - 2026-04-15
+
+### Breaking Changes
+- `ReadonlyObservableList<T>` interface — a new `event Action OnClean` member has been added. Any external type that implements `ReadonlyObservableList<T>` directly must add an `OnClean` event implementation; it cannot be left unimplemented.
+- `ObservableList<T>.Clear()` — no longer fires `OnItemRemoved` once per element. It now fires the new `OnClean` event a single time after the backing list is cleared. Callers that subscribed to `OnItemRemoved` to react to `Clear()` must subscribe to `OnClean` instead.
+
+### Added
+- `ObservableList<T>.OnClean` — new event fired once when `Clear()` is called, replacing the previous per-element `OnItemRemoved` sequence and enabling cheaper clear handling for subscribers.
+- `ObservableListChangeDetector<T>` — now subscribes to `OnClean` and routes it into the existing `OnChanged` event, so detectors correctly report `Clear()` calls without any changes to call sites.
+
+### Fixed
+- `PackageSamplesTestsToggler` — hiding a folder (renaming to `~`) now deletes the associated `.meta` file rather than leaving it as an orphaned `Foo~.meta`, which previously caused "meta file exists but folder can't be found" warnings in the Unity Editor.
+
 ## [1.2.0] - 2026-03-30
 
 ### Breaking Changes

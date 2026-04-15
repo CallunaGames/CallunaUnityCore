@@ -129,5 +129,27 @@ namespace Calluna.Core.Tests
 
             Assert.AreEqual(1f, _timer.Progress);
         }
+
+        // ---- Unscaled time mode ----
+
+        [UnityTest, Description("StartWith unscaled=true => Running is true and timer tracks unscaled elapsed time?")]
+        public IEnumerator Timer_StartWith_UnscaledTrue_RunsToCompletionAndFiresOnDone()
+        {
+            bool doneFired = false;
+            _timer.OnDone += () => doneFired = true;
+
+            _timer.StartWith(0.05f, unscaled: true);
+
+            Assert.IsTrue(_timer.Running, "Timer should be Running immediately after StartWith.");
+
+            float timeout = Time.realtimeSinceStartup + 2f;
+            while (!doneFired && Time.realtimeSinceStartup < timeout)
+                yield return null;
+
+            Assert.IsTrue(doneFired, "OnDone should have fired after unscaled timer elapsed.");
+            Assert.IsFalse(_timer.Running, "Running should be false after timer completes.");
+
+            _timer.OnDone -= () => doneFired = true;
+        }
     }
 }

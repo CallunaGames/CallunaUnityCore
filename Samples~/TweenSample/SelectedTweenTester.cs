@@ -1,3 +1,4 @@
+using Calluna;
 using UnityEngine;
 
 namespace Calluna.Core.Samples.TweenSample
