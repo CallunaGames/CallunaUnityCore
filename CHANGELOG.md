@@ -1,3 +1,9 @@
+## [1.4.0] - 2026-04-26
+
+### Added
+- `IEventBus` — new public interface with `Subscribe<TEvent>`, `Unsubscribe<TEvent>`, and `Publish<TEvent>` methods for typed, decoupled publish/subscribe messaging.
+- `EventBus` — concrete implementation of `IEventBus` with breadth-first, re-entrancy-safe dispatch: events published from inside a listener are queued and processed after the current dispatch batch completes. One dispatcher closure is allocated per event type at subscribe time; subsequent publishes of reference types allocate nothing.
+
 ## [1.3.0] - 2026-04-15
 
 ### Breaking Changes

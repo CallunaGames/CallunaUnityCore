@@ -348,6 +348,61 @@ class DontDestroyOnLoad : MonoBehaviour
 
 ---
 
+## Event Bus
+
+`IEventBus` is a typed publish/subscribe message bus. Use it to decouple publishers from subscribers — neither side needs a direct reference to the other. The concrete `EventBus` class uses breadth-first, re-entrancy-safe dispatch: events published from inside a listener are queued and processed after the current dispatch batch completes.
+
+```c#
+interface IEventBus
+class EventBus : IEventBus
+```
+
+### Interface
+
+| Method | Description |
+|---|---|
+| `Subscribe<TEvent>(Action<TEvent> listener)` | Register a listener for events of type `TEvent`. |
+| `Unsubscribe<TEvent>(Action<TEvent> listener)` | Remove a previously registered listener. Safe to call if not subscribed. |
+| `Publish<TEvent>(TEvent evt)` | Dispatch `evt` to all current listeners of `TEvent`. |
+
+### Usage
+
+#### Define an event
+
+```c#
+public struct PlayerDiedEvent { }
+
+public struct ScoreChangedEvent
+{
+    public int NewScore;
+}
+```
+
+#### Create and use directly
+
+```c#
+IEventBus bus = new EventBus();
+
+bus.Subscribe<ScoreChangedEvent>(OnScoreChanged);
+bus.Publish(new ScoreChangedEvent { NewScore = 42 });
+bus.Unsubscribe<ScoreChangedEvent>(OnScoreChanged);
+
+void OnScoreChanged(ScoreChangedEvent evt) => Debug.Log(evt.NewScore);
+```
+
+#### Expose as IEventBus
+
+Always inject or store the bus as `IEventBus`, not as `EventBus`, so the concrete type is not coupled to call sites.
+
+```c#
+private IEventBus _eventBus = new EventBus();
+public IEventBus EventBus => _eventBus;
+```
+
+**Note:** When using `com.calluna.di`, a single `EventBus` is automatically bound as a singleton at `AppContext` scope — you do not need to create one manually.
+
+---
+
 ## Samples
 
 The following samples are included and can be imported via **Window > Package Manager**:
