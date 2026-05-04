@@ -177,7 +177,7 @@ bool found = speed.TryGetValuePart("base", out int val);
 
 #### AccumulatingFloatValue Modes
 ```c#
-AccumulatingFloatValue addUp   = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.AddUp);
+AccumulatingFloatValue addUp   = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum);
 AccumulatingFloatValue product = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply);
 ```
 
@@ -190,7 +190,7 @@ AccumulatingBoolValue allTrue = new AccumulatingBoolValue(AccumulatingBoolValue.
 ---
 
 ## Tween
-Static utility class with easing functions based on [easings.net](https://easings.net/). All functions accept a `float` in the range `[0, 1]` and throw `ArgumentException` for out-of-range input.
+Static utility class with easing functions based on [easings.net](https://easings.net/). All functions accept a `float` in the range `[0, 1]`. Range validation is only performed in `UNITY_EDITOR` and `DEVELOPMENT_BUILD` builds; out-of-range values are silently accepted in release builds.
 
 ```c#
 static class Tween
@@ -220,6 +220,51 @@ float eased = Tween.EaseInOutSine(t); // t in [0, 1]
 ```c#
 Func<float, float> easeFn = Tween.GetEaseFunction(TweenType.EaseOutCubic);
 float eased = easeFn(t);
+```
+
+---
+
+## Value Tweeners
+`ValueTweener<TValue>` interpolates a typed value from a start to an end over a given duration using a `TweenType` easing function, driving the update via a `CoroutineHelper`. Use the concrete subclasses directly; implement your own subclass only when a new value type is needed.
+
+```c#
+abstract class ValueTweener<TValue> : IDisposable
+class FloatValueTweener   : ValueTweener<float>
+class IntValueTweener     : ValueTweener<int>      // steps are rounded via Mathf.RoundToInt
+class Vector2ValueTweener : ValueTweener<Vector2>
+class Vector3ValueTweener : ValueTweener<Vector3>
+```
+
+| Member | Description |
+|---|---|
+| `IsTweening` | `true` while a tween coroutine is running. |
+| `Perform(start, end, duration, tweenType, updateAction)` | Starts (or replaces) a tween. When `duration <= 0`, `updateAction` is called immediately with `end` and no coroutine is started. |
+| `Stop()` | Cancels any in-progress tween and sets `IsTweening` to `false`. |
+| `Dispose()` | Calls `Stop()`. |
+
+### Usage
+
+```c#
+CoroutineHelper coroutineHelper = gameObject.AddComponent<CoroutineHelper>();
+FloatValueTweener tweener = new FloatValueTweener(coroutineHelper);
+
+// Tween a UI alpha from 0 to 1 over 0.5 seconds using an ease-out curve.
+tweener.Perform(
+    start: 0f,
+    end: 1f,
+    duration: 0.5f,
+    tweenType: TweenType.EaseOutCubic,
+    updateAction: value => canvasGroup.alpha = value
+);
+
+// Check whether a tween is in progress.
+bool active = tweener.IsTweening;
+
+// Cancel early.
+tweener.Stop();
+
+// Or dispose when the owning object is destroyed.
+tweener.Dispose();
 ```
 
 ---
@@ -254,8 +299,8 @@ bool  isRunning  = timer.Running;
 
 #### Stop and Reset
 ```c#
-timer.StopTimer(); // stops and resets Elapsed/Running
-timer.Dispose();   // same as StopTimer()
+timer.Stop();    // stops and resets Elapsed/Running
+timer.Dispose(); // same as Stop()
 ```
 
 ---

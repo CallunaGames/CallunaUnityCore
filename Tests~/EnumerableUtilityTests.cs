@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 
 namespace Calluna.Core.Tests
@@ -19,7 +20,7 @@ namespace Calluna.Core.Tests
         [Test, Description("Sum(int[]) empty sequence => Returns 0?")]
         public void EnumerableUtility_SumInt_EmptySequence_ReturnsZero()
         {
-            Assert.AreEqual(0, EnumerableUtility.Sum(new int[0]));
+            Assert.AreEqual(0, EnumerableUtility.Sum(Array.Empty<int>()));
         }
 
         // --- Sum(float[]) ---
@@ -61,10 +62,10 @@ namespace Calluna.Core.Tests
             Assert.AreEqual(value, EnumerableUtility.Product(new float[] { value }), 0.0001f);
         }
 
-        [Test, Description("Product empty sequence => Returns 0?")]
-        public void EnumerableUtility_Product_EmptySequence_ReturnsZero()
+        [Test, Description("Product empty sequence => Returns 1?")]
+        public void EnumerableUtility_Product_EmptySequence_ReturnsOne()
         {
-            Assert.AreEqual(0f, EnumerableUtility.Product(new float[0]), 0.0001f);
+            Assert.AreEqual(1f, EnumerableUtility.Product(Array.Empty<float>()), 0.0001f);
         }
 
         // --- Any ---

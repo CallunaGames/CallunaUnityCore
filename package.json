@@ -1,12 +1,12 @@
 {
   "name": "com.calluna.core",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "displayName": "Calluna Unity Core",
   "description": "The core scripts of Calluna Games' Unity projects",
   "unity": "6000.33",
   "unityRelease": "",
   "documentationUrl": "https://github.com/CallunaGames/CallunaUnityCore",
-  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/compare/v1.3.0...v1.4.0",
+  "changelogUrl": "https://github.com/CallunaGames/CallunaUnityCore/compare/v1.4.0...v1.5.0",
   "licensesUrl": "",
   "dependencies": {
 
@@ -42,9 +42,13 @@
     "observable",
     "observable-list",
     "tween",
+    "tweening",
+    "value-tweener",
     "timer",
     "accumulator",
+    "accumulating",
     "coroutine",
+    "event-bus",
     "scriptable-object",
     "utility"
   ],

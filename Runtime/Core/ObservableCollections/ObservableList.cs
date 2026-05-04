@@ -24,10 +24,7 @@ namespace Calluna
 
         private readonly List<TValue> _items;
 
-        public IEnumerator<TValue> GetEnumerator()
-        {
-            return _items.GetEnumerator();
-        }
+        public IEnumerator<TValue> GetEnumerator() => _items.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -44,15 +41,9 @@ namespace Calluna
             OnClean?.Invoke();
         }
 
-        public bool Contains(TValue item)
-        {
-            return _items.Contains(item);
-        }
+        public bool Contains(TValue item) => _items.Contains(item);
 
-        public void CopyTo(TValue[] array, int arrayIndex)
-        {
-            _items.CopyTo(array, arrayIndex);
-        }
+        public void CopyTo(TValue[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
 
         public bool Remove(TValue item)
         {
@@ -67,10 +58,7 @@ namespace Calluna
             return false;
         }
 
-        public int IndexOf(TValue item)
-        {
-            return _items.IndexOf(item);
-        }
+        public int IndexOf(TValue item) => _items.IndexOf(item);
 
         public void Insert(int index, TValue item)
         {

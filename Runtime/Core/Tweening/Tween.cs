@@ -1,4 +1,3 @@
-
 using System;
 using UnityEngine;
 
@@ -95,8 +94,10 @@ namespace Calluna
 
         private static void ValidateValue(float value)
         {
-            if(value < 0.0f || value > 1.0f)
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (value < 0.0f || value > 1.0f)
                 throw new ArgumentException("The easing value must be between 0.0 and 1.0", nameof(value));
+#endif
         }
     }
 }

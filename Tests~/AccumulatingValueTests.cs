@@ -156,7 +156,7 @@ namespace Calluna.Core.Tests
         [TestCase(10f, 0.5f, 10.5f)]
         public void AccumulatingFloatValue_AddUpMode_ResultIsSum(float a, float b, float expected)
         {
-            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.AddUp);
+            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum);
             acc.Add("a", a);
             acc.Add("b", b);
             Assert.AreEqual(expected, acc.Value.Value, 0.0001f);
@@ -326,7 +326,7 @@ namespace Calluna.Core.Tests
         [TestCase(-1f, 4f, -1f)]
         public void AccumulatingFloatValue_Remove_ResultRecalculated(float a, float b, float expectedAfterRemove)
         {
-            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.AddUp);
+            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum);
             acc.Add("a", a);
             acc.Add("b", b);
             acc.Remove("b");
@@ -339,7 +339,7 @@ namespace Calluna.Core.Tests
         [TestCase(-1f, 0f, 0f)]
         public void AccumulatingFloatValue_Set_ResultRecalculated(float initial, float updated, float expected)
         {
-            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.AddUp);
+            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum);
             acc.Add("a", initial);
             acc.Set("a", updated);
             Assert.AreEqual(expected, acc.Value.Value, 0.0001f);
@@ -370,6 +370,99 @@ namespace Calluna.Core.Tests
             acc.Add("a", initial);
             acc.Set("a", updated);
             Assert.AreEqual(expected, acc.Value.Value);
+        }
+
+        // --- AccumulatingFloatValue TryGetValuePart ---
+
+        [Test, Description("TryGetValuePart with existing id => Returns true and correct value?")]
+        public void AccumulatingFloatValue_TryGetValuePart_ExistingId_ReturnsTrueAndValue()
+        {
+            var acc = new AccumulatingFloatValue();
+            acc.Add("a", 3.5f);
+            bool found = acc.TryGetValuePart("a", out float result);
+            Assert.IsTrue(found);
+            Assert.AreEqual(3.5f, result, 0.0001f);
+        }
+
+        [Test, Description("TryGetValuePart with missing id => Returns false?")]
+        public void AccumulatingFloatValue_TryGetValuePart_MissingId_ReturnsFalse()
+        {
+            var acc = new AccumulatingFloatValue();
+            bool found = acc.TryGetValuePart("missing", out _);
+            Assert.IsFalse(found);
+        }
+
+        // --- AccumulatingFloatValue indexer ---
+
+        [Test, Description("Indexer get => Returns stored float value for id?")]
+        public void AccumulatingFloatValue_IndexerGet_ReturnsStoredValue()
+        {
+            var acc = new AccumulatingFloatValue();
+            acc.Add("a", 2.5f);
+            Assert.AreEqual(2.5f, acc["a"], 0.0001f);
+        }
+
+        [Test, Description("Indexer set on existing id => Result updates to sum of new values?")]
+        public void AccumulatingFloatValue_IndexerSet_UpdatesResult()
+        {
+            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum);
+            acc.Add("a", 1f);
+            acc.Add("b", 2f);
+            acc["a"] = 5f;
+            Assert.AreEqual(7f, acc.Value.Value, 0.0001f);
+        }
+
+        // --- AccumulatingBoolValue TryGetValuePart ---
+
+        [Test, Description("TryGetValuePart with existing id => Returns true and correct bool value?")]
+        public void AccumulatingBoolValue_TryGetValuePart_ExistingId_ReturnsTrueAndValue()
+        {
+            var acc = new AccumulatingBoolValue();
+            acc.Add("a", true);
+            bool found = acc.TryGetValuePart("a", out bool result);
+            Assert.IsTrue(found);
+            Assert.IsTrue(result);
+        }
+
+        [Test, Description("TryGetValuePart with missing id => Returns false?")]
+        public void AccumulatingBoolValue_TryGetValuePart_MissingId_ReturnsFalse()
+        {
+            var acc = new AccumulatingBoolValue();
+            bool found = acc.TryGetValuePart("missing", out _);
+            Assert.IsFalse(found);
+        }
+
+        // --- AccumulatingBoolValue indexer ---
+
+        [Test, Description("Indexer get => Returns stored bool value for id?")]
+        public void AccumulatingBoolValue_IndexerGet_ReturnsStoredValue()
+        {
+            var acc = new AccumulatingBoolValue();
+            acc.Add("a", true);
+            Assert.IsTrue(acc["a"]);
+        }
+
+        [Test, Description("Indexer set on existing id (Any mode) => Result updates to true?")]
+        public void AccumulatingBoolValue_IndexerSet_UpdatesResult()
+        {
+            var acc = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+            acc.Add("a", false);
+            acc["a"] = true;
+            Assert.IsTrue(acc.Value.Value);
+        }
+
+        // --- AccumulatingBoolValue OnChanged ---
+
+        [Test, Description("Add entry => Value observable fires OnChanged?")]
+        public void AccumulatingBoolValue_Add_FiresOnChanged()
+        {
+            var acc = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+            bool fired = false;
+            Observable<bool>.ValueChanged listener = () => { fired = true; };
+            acc.Value.OnChanged += listener;
+            acc.Add("a", true);
+            acc.Value.OnChanged -= listener;
+            Assert.IsTrue(fired);
         }
     }
 }

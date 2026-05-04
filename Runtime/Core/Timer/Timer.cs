@@ -22,10 +22,7 @@ namespace Calluna
             _id = Guid.NewGuid().ToString();
         }
 
-        public void Dispose()
-        {
-            StopTimer();
-        }
+        public void Dispose() => Stop();
 
         public Timer StartWith(float duration, bool unscaled = false)
         {
@@ -34,14 +31,14 @@ namespace Calluna
                 throw new ArgumentException("Duration must be greater than 0.");
             }
 
-            StopTimer();
+            Stop();
             _duration = duration;
             Running = true;
             _coroutineHelper.StartWithID(RunTimer(unscaled), _id);
             return this;
         }
 
-        public void StopTimer()
+        public void Stop()
         {
             _coroutineHelper.StopWithID(_id);
             _duration = 0;

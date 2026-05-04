@@ -15,7 +15,7 @@ namespace Calluna
             _list.OnItemRemoved += OnItemChanged;
             _list.OnItemReplaced += OnItemReplaced;
             _list.OnItemsSwapped += OnItemsSwapped;
-            _list.OnClean += OnChanged_Invoke;
+            _list.OnClean += RaiseOnChanged;
         }
 
         public void Dispose()
@@ -24,10 +24,10 @@ namespace Calluna
             _list.OnItemRemoved -= OnItemChanged;
             _list.OnItemReplaced -= OnItemReplaced;
             _list.OnItemsSwapped -= OnItemsSwapped;
-            _list.OnClean -= OnChanged_Invoke;
+            _list.OnClean -= RaiseOnChanged;
         }
 
-        private void OnChanged_Invoke() => OnChanged?.Invoke();
+        private void RaiseOnChanged() => OnChanged?.Invoke();
 
         private void OnItemChanged(TValue item, int index) => OnChanged?.Invoke();
 

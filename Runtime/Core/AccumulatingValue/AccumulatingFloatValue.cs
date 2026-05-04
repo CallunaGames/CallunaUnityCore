@@ -5,9 +5,9 @@ namespace Calluna
 {
     public class AccumulatingFloatValue : AccumulatingValue<float>
     {
-        private Mode _mode;
+        private readonly Mode _mode;
 
-        public AccumulatingFloatValue(Mode mode = Mode.AddUp)
+        public AccumulatingFloatValue(Mode mode = Mode.Sum)
         {
             _mode = mode;
         }
@@ -16,7 +16,7 @@ namespace Calluna
         {
             return _mode switch
             {
-                Mode.AddUp   => EnumerableUtility.Sum(values),
+                Mode.Sum      => EnumerableUtility.Sum(values),
                 Mode.Multiply => EnumerableUtility.Product(values),
                 _ => throw new ArgumentOutOfRangeException()
             };
@@ -24,7 +24,7 @@ namespace Calluna
 
         public enum Mode
         {
-            AddUp = 1,
+            Sum = 1,
             Multiply = 2,
         }
     }

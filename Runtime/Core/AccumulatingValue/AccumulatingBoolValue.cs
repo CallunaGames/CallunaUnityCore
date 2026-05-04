@@ -5,7 +5,7 @@ namespace Calluna
 {
     public class AccumulatingBoolValue : AccumulatingValue<bool>
     {
-        private Mode _mode;
+        private readonly Mode _mode;
 
         public AccumulatingBoolValue(Mode mode = Mode.Any)
         {

@@ -47,8 +47,7 @@ namespace Calluna
             _listeners[key] = _listeners.TryGetValue(key, out Delegate existing)
                 ? Delegate.Combine(existing, listener)
                 : listener;
-            if (!_dispatchers.ContainsKey(key))
-                _dispatchers[key] = obj => InvokeListeners<TEvent>((TEvent)obj);
+            _dispatchers.TryAdd(key, obj => InvokeListeners<TEvent>((TEvent)obj));
         }
 
         /// <summary>
