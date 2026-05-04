@@ -39,6 +39,19 @@ namespace Calluna
             _coroutineHelper.ReplaceWithID(DoTween(start, end, duration, tweenType, updateAction), _id);
         }
 
+        /// <summary>
+        /// Starts the tween and returns a <see cref="CustomYieldInstruction"/> that completes when
+        /// the tween finishes. Use with <c>yield return</c> inside a coroutine to sequence work
+        /// after the tween. When <paramref name="duration"/> is zero or negative, the instruction
+        /// completes immediately (same synchronous behaviour as <see cref="Perform"/>).
+        /// </summary>
+        public CustomYieldInstruction PerformAndWait(TValue start, TValue end, float duration,
+            TweenType tweenType, Action<TValue> updateAction)
+        {
+            Perform(start, end, duration, tweenType, updateAction);
+            return new WaitWhile(() => IsTweening);
+        }
+
         public void Stop()
         {
             _coroutineHelper.StopWithID(_id);

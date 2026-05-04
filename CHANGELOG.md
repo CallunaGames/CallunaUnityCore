@@ -1,3 +1,8 @@
+## [1.5.1] - 2026-05-04
+
+### Added
+- `ValueTweener<TValue>.PerformAndWait(start, end, duration, TweenType, Action<TValue>)` — starts the tween and returns a `CustomYieldInstruction` that completes when the tween finishes, allowing callers to `yield return` inside a coroutine. Zero or negative duration resolves immediately.
+
 ## [1.5.0] - 2026-05-04
 
 ### Breaking Changes

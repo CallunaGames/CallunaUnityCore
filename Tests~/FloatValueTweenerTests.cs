@@ -1,5 +1,7 @@
+using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
 namespace Calluna.Core.Tests
@@ -113,6 +115,35 @@ namespace Calluna.Core.Tests
 
             tweener.Dispose();
 
+            Assert.IsFalse(tweener.IsTweening);
+        }
+
+        // ── PerformAndWait ───────────────────────────────────────────────────────
+
+        [Test]
+        [Description("PerformAndWait with zero duration => callback receives end value and instruction keepWaiting is false?")]
+        public void FloatValueTweener_PerformAndWait_ZeroDuration_InvokesCallbackAndInstructionIsComplete()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+            float received = -1f;
+
+            var instruction = tweener.PerformAndWait(0f, 10f, 0f, TweenType.EaseInOutSine, v => received = v);
+
+            Assert.AreEqual(10f, received, 0.0001f);
+            Assert.IsFalse(instruction.keepWaiting,
+                "zero-duration tween must produce an instruction that does not wait");
+        }
+
+        [UnityTest]
+        [Description("PerformAndWait with positive duration => coroutine awaits until tween completes with end value?")]
+        public IEnumerator FloatValueTweener_PerformAndWait_PositiveDuration_YieldsUntilTweenCompletes()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+            float received = -1f;
+
+            yield return tweener.PerformAndWait(0f, 10f, 0.05f, TweenType.EaseInOutSine, v => received = v);
+
+            Assert.AreEqual(10f, received, 0.0001f);
             Assert.IsFalse(tweener.IsTweening);
         }
     }
