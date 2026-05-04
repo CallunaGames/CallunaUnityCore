@@ -1,4 +1,3 @@
-
 using System;
 using UnityEngine;
 
@@ -7,7 +6,7 @@ namespace Calluna
     /// <summary>
     /// Source: https://easings.net/
     /// </summary>
-    public static class yeTween
+    public static class Tween
     {
         public static float EaseInSine(float value)
         {

@@ -70,6 +70,24 @@ namespace Calluna.Core.Tests
             Assert.DoesNotThrow(() => _bus.Unsubscribe<EventA>(_ => { }));
         }
 
+        [Test]
+        [Description("Subscribe same handler instance twice => Handler called exactly twice per publish?")]
+        public void EventBus_Subscribe_SameHandlerTwice_CalledTwicePerPublish()
+        {
+            int callCount = 0;
+            void Handler(EventA _) => callCount++;
+
+            _bus.Subscribe<EventA>(Handler);
+            _bus.Subscribe<EventA>(Handler);
+
+            _bus.Publish(new EventA());
+
+            _bus.Unsubscribe<EventA>(Handler);
+            _bus.Unsubscribe<EventA>(Handler);
+
+            Assert.AreEqual(2, callCount);
+        }
+
         // ── Edge cases ───────────────────────────────────────────────────────────
 
         [Test]

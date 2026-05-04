@@ -67,14 +67,14 @@ namespace Calluna.Core.Tests
             yield return null;
         }
 
-        // ---- StopTimer ----
+        // ---- Stop ----
 
-        [UnityTest, Description("StopTimer while running => Running false and Elapsed reset to zero?")]
-        public IEnumerator Timer_StopTimer_WhileRunning_ResetsState()
+        [UnityTest, Description("Stop while running => Running false and Elapsed reset to zero?")]
+        public IEnumerator Timer_Stop_WhileRunning_ResetsState()
         {
             _timer.StartWith(10f);
             yield return null;
-            _timer.StopTimer();
+            _timer.Stop();
             Assert.IsFalse(_timer.Running);
             Assert.AreEqual(0f, _timer.Elapsed);
         }

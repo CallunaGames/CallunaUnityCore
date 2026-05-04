@@ -60,10 +60,10 @@ namespace Calluna.Core.Tests
         // ── State ────────────────────────────────────────────────────────────────
 
         [Test]
-        public void FloatValueTweener_IsPerforming_AfterConstruction_ReturnsFalse()
+        public void FloatValueTweener_IsTweening_AfterConstruction_ReturnsFalse()
         {
             var tweener = new FloatValueTweener(_coroutineHelper);
-            Assert.IsFalse(tweener.IsPerforming);
+            Assert.IsFalse(tweener.IsTweening);
         }
 
         [Test]
@@ -78,6 +78,42 @@ namespace Calluna.Core.Tests
         {
             var tweener = new FloatValueTweener(_coroutineHelper);
             Assert.DoesNotThrow(() => tweener.Dispose());
+        }
+
+        [Test]
+        [Description("Perform with positive duration => IsTweening is true immediately after the call?")]
+        public void FloatValueTweener_Perform_PositiveDuration_IsTweeningIsTrue()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+
+            tweener.Perform(0f, 1f, 5f, TweenType.EaseInOutSine, _ => { });
+
+            Assert.IsTrue(tweener.IsTweening);
+            tweener.Stop();
+        }
+
+        [Test]
+        [Description("Stop after Perform with positive duration => IsTweening is false?")]
+        public void FloatValueTweener_Stop_AfterPerformWithPositiveDuration_IsTweeningIsFalse()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+            tweener.Perform(0f, 1f, 5f, TweenType.EaseInOutSine, _ => { });
+
+            tweener.Stop();
+
+            Assert.IsFalse(tweener.IsTweening);
+        }
+
+        [Test]
+        [Description("Dispose after Perform with positive duration => IsTweening is false?")]
+        public void FloatValueTweener_Dispose_AfterPerformWithPositiveDuration_IsTweeningIsFalse()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+            tweener.Perform(0f, 1f, 5f, TweenType.EaseInOutSine, _ => { });
+
+            tweener.Dispose();
+
+            Assert.IsFalse(tweener.IsTweening);
         }
     }
 }

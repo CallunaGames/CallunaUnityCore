@@ -1,3 +1,23 @@
+## [Unreleased] - 2026-05-03
+
+### Breaking Changes
+- `Timer.StopTimer()` renamed to `Timer.Stop()` — all call sites must be updated to the new name.
+- `AccumulatingFloatValue.Mode.AddUp` renamed to `Mode.Sum` — all references to `Mode.AddUp` must be updated to `Mode.Sum`.
+
+### Added
+- `ValueTweener<TValue>` — abstract base class for animated value interpolation driven by `CoroutineHelper` coroutines. Exposes `IsTweening`, `Perform(start, end, duration, TweenType, Action<TValue>)`, `Stop()`, and `Dispose()`.
+- `FloatValueTweener`, `IntValueTweener`, `Vector2ValueTweener`, `Vector3ValueTweener` — concrete `ValueTweener<T>` subclasses for the most common Unity value types, using `Mathf.LerpUnclamped` (float, Vector2, Vector3) and `Mathf.RoundToInt(LerpUnclamped(...))` (int).
+- `Tween.GetEaseFunction(TweenType)` — returns a pre-allocated `Func<float,float>` delegate from a static lookup, avoiding a new allocation on every call.
+
+### Fixed
+- `Tween` class name was accidentally committed as `yeTween` — corrected back to `Tween`.
+
+### Changed
+- `Tween.ValidateValue` is now compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD` — per-frame float comparisons are eliminated in release builds.
+- `AccumulatingFloatValue` and `AccumulatingBoolValue` `_mode` fields are now `readonly`, preventing accidental mutation after construction.
+- `EventBus.Subscribe` uses `TryAdd` instead of a `ContainsKey` + indexer pair, reducing dictionary lookups from two to one.
+- `EnumerableUtility.Product` is now seeded with the multiplicative identity `1f`, replacing the previous sentinel pattern.
+
 ## [1.4.0] - 2026-04-26
 
 ### Added

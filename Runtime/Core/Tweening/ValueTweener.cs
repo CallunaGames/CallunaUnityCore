@@ -15,7 +15,7 @@ namespace Calluna
         private readonly CoroutineHelper _coroutineHelper;
         private readonly string _id = Guid.NewGuid().ToString();
 
-        public bool IsPerforming { get; private set; }
+        public bool IsTweening { get; private set; }
 
         protected ValueTweener(CoroutineHelper coroutineHelper)
         {
@@ -42,14 +42,14 @@ namespace Calluna
         public void Stop()
         {
             _coroutineHelper.StopWithID(_id);
-            IsPerforming = false;
+            IsTweening = false;
         }
 
         public void Dispose() => Stop();
 
         private IEnumerator DoTween(TValue start, TValue end, float duration, TweenType tweenType, Action<TValue> updateAction)
         {
-            IsPerforming = true;
+            IsTweening = true;
             float elapsed = 0f;
             // Cache the reciprocal so every frame uses a multiply instead of a divide.
             float invDuration = 1f / duration;
@@ -66,7 +66,7 @@ namespace Calluna
                 yield return null;
             }
 
-            IsPerforming = false;
+            IsTweening = false;
         }
 
         protected abstract TValue CalculateNewValue(float t, TValue start, TValue end);

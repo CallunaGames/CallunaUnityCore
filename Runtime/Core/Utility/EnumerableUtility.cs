@@ -18,16 +18,11 @@ namespace Calluna
             return total;
         }
 
-        // Seeds with the first element so a single-element sequence returns that value unchanged.
+        // Multiplies all values together; returns 1 for an empty sequence (multiplicative identity).
         public static float Product(IEnumerable<float> values)
         {
-            float result = 0f;
-            bool isFirst = true;
-            foreach (float v in values)
-            {
-                if (isFirst) { result = v; isFirst = false; }
-                else result *= v;
-            }
+            float result = 1f;
+            foreach (float v in values) result *= v;
             return result;
         }
 

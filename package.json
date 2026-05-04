@@ -42,9 +42,13 @@
     "observable",
     "observable-list",
     "tween",
+    "tweening",
+    "value-tweener",
     "timer",
     "accumulator",
+    "accumulating",
     "coroutine",
+    "event-bus",
     "scriptable-object",
     "utility"
   ],

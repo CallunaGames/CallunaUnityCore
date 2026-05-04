@@ -28,10 +28,7 @@ namespace Calluna
 
         private T _value;
 
-        public void SetValueWithoutNotify(T value)
-        {
-            _value = value;
-        }
+        public void SetValueWithoutNotify(T value) => _value = value;
         
         public static implicit operator Observable<T>(T value) => new(){_value = value};
         public static implicit operator T(Observable<T> value) => value.Value;
