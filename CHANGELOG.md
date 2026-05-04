@@ -9,9 +9,6 @@
 - `FloatValueTweener`, `IntValueTweener`, `Vector2ValueTweener`, `Vector3ValueTweener` — concrete `ValueTweener<T>` subclasses for the most common Unity value types, using `Mathf.LerpUnclamped` (float, Vector2, Vector3) and `Mathf.RoundToInt(LerpUnclamped(...))` (int).
 - `Tween.GetEaseFunction(TweenType)` — returns a pre-allocated `Func<float,float>` delegate from a static lookup, avoiding a new allocation on every call.
 
-### Fixed
-- `Tween` class name was accidentally committed as `yeTween` — corrected back to `Tween`.
-
 ### Changed
 - `Tween.ValidateValue` is now compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD` — per-frame float comparisons are eliminated in release builds.
 - `AccumulatingFloatValue` and `AccumulatingBoolValue` `_mode` fields are now `readonly`, preventing accidental mutation after construction.
