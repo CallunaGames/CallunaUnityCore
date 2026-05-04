@@ -1,4 +1,4 @@
-## [Unreleased] - 2026-05-03
+## [1.5.0] - 2026-05-04
 
 ### Breaking Changes
 - `Timer.StopTimer()` renamed to `Timer.Stop()` — all call sites must be updated to the new name.
