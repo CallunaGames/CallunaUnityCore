@@ -1,3 +1,9 @@
+## [1.5.2] - 2026-05-05
+
+### Added
+- `TweenType.Linear` — new enum value for constant-speed (no easing) interpolation.
+- `Tween.Linear(float)` — easing function that returns the input value unchanged, producing a straight linear interpolation across all `ValueTweener<T>` types.
+
 ## [1.5.1] - 2026-05-04
 
 ### Added

@@ -76,12 +76,19 @@ namespace Calluna
             
         }
 
-        // Pre-allocated delegates indexed by TweenType enum value (0–8) to avoid per-call allocation.
+        public static float Linear(float value)
+        {
+            ValidateValue(value);
+            return value;
+        }
+
+        // Pre-allocated delegates indexed by TweenType enum value (0–9) to avoid per-call allocation.
         private static readonly Func<float, float>[] _easeFunctions =
         {
             EaseInOutSine, EaseInSine, EaseOutSine,
             EaseInOutCubic, EaseInCubic, EaseOutCubic,
             EaseInOutBack, EaseInBack, EaseOutBack,
+            Linear,
         };
 
         public static Func<float, float> GetEaseFunction(TweenType tweenType)
