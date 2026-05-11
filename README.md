@@ -208,6 +208,7 @@ enum TweenType
 | `EaseInBack` | `TweenType.EaseInBack` |
 | `EaseOutBack` | `TweenType.EaseOutBack` |
 | `EaseInOutBack` | `TweenType.EaseInOutBack` |
+| `Linear` | `TweenType.Linear` |
 
 ### Usage
 
@@ -239,6 +240,7 @@ class Vector3ValueTweener : ValueTweener<Vector3>
 |---|---|
 | `IsTweening` | `true` while a tween coroutine is running. |
 | `Perform(start, end, duration, tweenType, updateAction)` | Starts (or replaces) a tween. When `duration <= 0`, `updateAction` is called immediately with `end` and no coroutine is started. |
+| `PerformAndWait(start, end, duration, tweenType, updateAction)` | Same as `Perform`, but returns a `CustomYieldInstruction` that completes when the tween finishes. Use with `yield return` to sequence work after the tween. |
 | `Stop()` | Cancels any in-progress tween and sets `IsTweening` to `false`. |
 | `Dispose()` | Calls `Stop()`. |
 
@@ -362,7 +364,7 @@ static class EnumerableUtility
 |---|---|
 | `Sum(IEnumerable<int>)` | Returns the sum of all integers |
 | `Sum(IEnumerable<float>)` | Returns the sum of all floats |
-| `Product(IEnumerable<float>)` | Returns the product, seeded from the first element |
+| `Product(IEnumerable<float>)` | Returns the product, seeded from `1f` (returns `1` for an empty sequence) |
 | `Any(IEnumerable<bool>)` | Returns `true` if at least one value is `true` |
 | `All(IEnumerable<bool>)` | Returns `true` if every value is `true` |
 
@@ -445,6 +447,34 @@ public IEventBus EventBus => _eventBus;
 ```
 
 **Note:** When using `com.calluna.di`, a single `EventBus` is automatically bound as a singleton at `AppContext` scope — you do not need to create one manually.
+
+---
+
+## UpdateScheduler
+`UpdateScheduler` is a `MonoBehaviour` that defers callbacks to a specific Unity update phase within the current frame, deduplicating multiple requests with the same string ID. First registration wins: if `ScheduleOnce` is called more than once in a frame with the same ID, only the first callback runs.
+
+```c#
+class UpdateScheduler : MonoBehaviour
+enum UpdateScheduler.SchedulePhase { Update, LateUpdate }
+```
+
+### Usage
+
+```c#
+UpdateScheduler scheduler = gameObject.AddComponent<UpdateScheduler>();
+
+// Schedule a callback for the end of this frame (LateUpdate is the default phase).
+scheduler.ScheduleOnce("refresh-ui", () => RefreshUI(), UpdateScheduler.SchedulePhase.LateUpdate);
+
+// Schedule a callback for Update instead.
+scheduler.ScheduleOnce("apply-movement", () => ApplyMovement(), UpdateScheduler.SchedulePhase.Update);
+
+// Cancel a specific pending callback before it runs.
+scheduler.Cancel("refresh-ui");
+
+// Cancel all pending callbacks.
+scheduler.CancelAll();
+```
 
 ---
 

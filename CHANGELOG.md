@@ -1,6 +1,8 @@
-## [1.5.2] - 2026-05-05
+## [1.5.2] - 2026-05-11
 
 ### Added
+- `UpdateScheduler` — new `MonoBehaviour` that defers callbacks to a chosen Unity update phase within the current frame. Accepts a string ID; first registration wins (duplicate IDs in the same frame are discarded). Provides `ScheduleOnce(id, callback, SchedulePhase)`, `Cancel(id)`, and `CancelAll()`.
+- `UpdateScheduler.SchedulePhase` — nested enum with `Update` and `LateUpdate` values, controlling which Unity loop phase the scheduled callback runs in.
 - `TweenType.Linear` — new enum value for constant-speed (no easing) interpolation.
 - `Tween.Linear(float)` — easing function that returns the input value unchanged, producing a straight linear interpolation across all `ValueTweener<T>` types.
 
