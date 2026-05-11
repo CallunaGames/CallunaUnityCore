@@ -142,7 +142,7 @@ namespace Calluna.Core.Tests
         [Test, Description("GetEaseFunction invalid TweenType => Throws ArgumentOutOfRangeException?")]
         [TestCase(-1)]
         [TestCase(100)]
-        [TestCase(9)]
+        [TestCase(10)]
         public void Tween_GetEaseFunction_InvalidTweenType_ThrowsArgumentOutOfRangeException(int invalidValue)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Tween.GetEaseFunction((TweenType)invalidValue));
