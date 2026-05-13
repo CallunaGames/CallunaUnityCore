@@ -13,6 +13,7 @@ namespace Calluna
         public event ItemReplaceEvent<TValue> OnItemReplaced;
         public event ItemSwapEvent<TValue> OnItemsSwapped;
         public event Action OnClean;
+        public event Action OnContentsReplaced;
 
         public int Count => _items.Count;
         int ICollection<TValue>.Count => _items.Count;
@@ -87,28 +88,26 @@ namespace Calluna
         
         // Walk both sequences in lock-step: replace overlapping positions, then
         // remove any surplus items from the tail, then append any remaining new items.
+        // Mutations are applied directly to _items without firing per-item events;
+        // a single OnContentsReplaced is raised at the end.
         public void OverrideWith(IEnumerable<TValue> items)
         {
             using IEnumerator<TValue> e = items.GetEnumerator();
 
             int i = 0;
-            int count = _items.Count;
-
-            while (i < count && e.MoveNext())
+            while (i < _items.Count && e.MoveNext())
             {
-                Replace(e.Current, i);
+                _items[i] = e.Current;
                 i++;
             }
 
             while (_items.Count > i)
-            {
-                RemoveAt(i);
-            }
+                _items.RemoveAt(i);
 
             while (e.MoveNext())
-            {
-                Add(e.Current);
-            }
+                _items.Add(e.Current);
+
+            OnContentsReplaced?.Invoke();
         }
 
         private void Replace(TValue item, int index)

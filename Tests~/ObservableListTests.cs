@@ -334,89 +334,45 @@ namespace Calluna.Core.Tests
                 Assert.AreEqual(replacement[i], list[i]);
         }
 
-        [Test, Description("OverrideWith shorter list => OnItemReplaced fires for each overlapping position with correct former and new items?")]
+        [Test, Description("OverrideWith any combination => OnItemAdded, OnItemRemoved, OnItemReplaced do not fire?")]
         [TestCase(new int[] { 1, 2, 3 }, new int[] { 10, 20 })]
         [TestCase(new int[] { 5, 6, 7, 8 }, new int[] { 11, 12 })]
-        public void ObservableList_OverrideWith_ShorterList_OnItemReplacedFiredWithCorrectArgs(int[] initial, int[] replacement)
-        {
-            var list = new ObservableList<int>(initial);
-            var replacedNew = new System.Collections.Generic.List<int>();
-            var replacedFormer = new System.Collections.Generic.List<int>();
-            var replacedIndices = new System.Collections.Generic.List<int>();
-
-            ItemReplaceEvent<int> listener = (newItem, formerItem, index) =>
-            {
-                replacedNew.Add(newItem);
-                replacedFormer.Add(formerItem);
-                replacedIndices.Add(index);
-            };
-            list.OnItemReplaced += listener;
-            list.OverrideWith(replacement);
-            list.OnItemReplaced -= listener;
-
-            Assert.AreEqual(replacement.Length, replacedNew.Count);
-            for (int i = 0; i < replacement.Length; i++)
-            {
-                Assert.AreEqual(replacement[i], replacedNew[i]);
-                Assert.AreEqual(initial[i], replacedFormer[i]);
-                Assert.AreEqual(i, replacedIndices[i]);
-            }
-        }
-
-        [Test, Description("OverrideWith shorter list => OnItemRemoved fires for each surplus item with correct item and index?")]
-        [TestCase(new int[] { 1, 2, 3 }, new int[] { 10 })]
-        [TestCase(new int[] { 5, 6, 7, 8 }, new int[] { 11, 12 })]
-        public void ObservableList_OverrideWith_ShorterList_OnItemRemovedFiredForSurplusItems(int[] initial, int[] replacement)
-        {
-            var list = new ObservableList<int>(initial);
-            var removedItems = new System.Collections.Generic.List<int>();
-            var removedIndices = new System.Collections.Generic.List<int>();
-
-            ItemChangeEvent<int> listener = (item, index) =>
-            {
-                removedItems.Add(item);
-                removedIndices.Add(index);
-            };
-            list.OnItemRemoved += listener;
-            list.OverrideWith(replacement);
-            list.OnItemRemoved -= listener;
-
-            int expectedRemovedCount = initial.Length - replacement.Length;
-            Assert.AreEqual(expectedRemovedCount, removedItems.Count);
-            // Items are removed from the tail one at a time; each removal reduces Count by 1,
-            // so the reported index is always equal to the current list length (replacement.Length).
-            for (int i = 0; i < expectedRemovedCount; i++)
-            {
-                Assert.AreEqual(initial[replacement.Length + i], removedItems[i]);
-                Assert.AreEqual(replacement.Length, removedIndices[i]);
-            }
-        }
-
-        [Test, Description("OverrideWith longer list => OnItemAdded fires for each appended item with correct item and index?")]
         [TestCase(new int[] { 1 }, new int[] { 10, 20, 30 })]
         [TestCase(new int[] { 5, 6 }, new int[] { 11, 12, 13, 14 })]
-        public void ObservableList_OverrideWith_LongerList_OnItemAddedFiredForAppendedItems(int[] initial, int[] replacement)
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 })]
+        public void ObservableList_OverrideWith_NoPerItemEventsFired(int[] initial, int[] replacement)
         {
             var list = new ObservableList<int>(initial);
-            var addedItems = new System.Collections.Generic.List<int>();
-            var addedIndices = new System.Collections.Generic.List<int>();
-
-            ItemChangeEvent<int> listener = (item, index) =>
-            {
-                addedItems.Add(item);
-                addedIndices.Add(index);
-            };
-            list.OnItemAdded += listener;
+            bool anyFired = false;
+            ItemChangeEvent<int> changeListener = (item, index) => { anyFired = true; };
+            ItemReplaceEvent<int> replaceListener = (n, f, i) => { anyFired = true; };
+            list.OnItemAdded    += changeListener;
+            list.OnItemRemoved  += changeListener;
+            list.OnItemReplaced += replaceListener;
             list.OverrideWith(replacement);
-            list.OnItemAdded -= listener;
+            list.OnItemAdded    -= changeListener;
+            list.OnItemRemoved  -= changeListener;
+            list.OnItemReplaced -= replaceListener;
 
-            int expectedAddedCount = replacement.Length - initial.Length;
-            Assert.AreEqual(expectedAddedCount, addedItems.Count);
-            for (int i = 0; i < expectedAddedCount; i++)
-            {
-                Assert.AreEqual(replacement[initial.Length + i], addedItems[i]);
-                Assert.AreEqual(initial.Length + i, addedIndices[i]);
-            }
+            Assert.IsFalse(anyFired);
+        }
+
+        [Test, Description("OverrideWith any combination => OnContentsReplaced fires exactly once?")]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 10, 20 })]
+        [TestCase(new int[] { 1 }, new int[] { 10, 20, 30 })]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 })]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { })]
+        [TestCase(new int[] { }, new int[] { 1, 2, 3 })]
+        public void ObservableList_OverrideWith_OnContentsReplacedFiredExactlyOnce(int[] initial, int[] replacement)
+        {
+            var list = new ObservableList<int>(initial);
+            int callCount = 0;
+            System.Action listener = () => { callCount++; };
+            list.OnContentsReplaced += listener;
+            list.OverrideWith(replacement);
+            list.OnContentsReplaced -= listener;
+
+            Assert.AreEqual(1, callCount);
         }
 
         [Test, Description("OverrideWith empty sequence => Count becomes 0?")]
@@ -428,34 +384,6 @@ namespace Calluna.Core.Tests
             var list = new ObservableList<int>(initial);
             list.OverrideWith(System.Array.Empty<int>());
             Assert.AreEqual(0, list.Count);
-        }
-
-        [Test, Description("OverrideWith empty sequence => OnItemRemoved fires once per original item with correct item and index?")]
-        [TestCase(new int[] { 1, 2, 3 })]
-        [TestCase(new int[] { 5 })]
-        [TestCase(new int[] { 10, 20 })]
-        public void ObservableList_OverrideWith_EmptySequence_OnItemRemovedFiredForEachItem(int[] initial)
-        {
-            var list = new ObservableList<int>(initial);
-            var removedItems = new System.Collections.Generic.List<int>();
-            var removedIndices = new System.Collections.Generic.List<int>();
-
-            ItemChangeEvent<int> listener = (item, index) =>
-            {
-                removedItems.Add(item);
-                removedIndices.Add(index);
-            };
-            list.OnItemRemoved += listener;
-            list.OverrideWith(System.Array.Empty<int>());
-            list.OnItemRemoved -= listener;
-
-            Assert.AreEqual(initial.Length, removedItems.Count);
-            // OverrideWith calls RemoveAt(0) each pass, so each item is reported at index 0
-            for (int i = 0; i < initial.Length; i++)
-            {
-                Assert.AreEqual(initial[i], removedItems[i]);
-                Assert.AreEqual(0, removedIndices[i]);
-            }
         }
 
         [Test, Description("OverrideWith empty sequence => OnItemReplaced does not fire?")]

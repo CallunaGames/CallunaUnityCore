@@ -84,6 +84,25 @@ namespace Calluna.Core.Tests
             detector.Dispose();
         }
 
+        [Test, Description("OverrideWith => OnChanged fires exactly once regardless of list size change?")]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 10, 20 })]
+        [TestCase(new int[] { 1 }, new int[] { 10, 20, 30 })]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 })]
+        public void ObservableListChangeDetector_OnChanged_FiresOnceOnOverrideWith(int[] initial, int[] replacement)
+        {
+            var list = new ObservableList<int>(initial);
+            var detector = new ObservableListChangeDetector<int>(list);
+
+            int callCount = 0;
+            System.Action listener = () => { callCount++; };
+            detector.OnChanged += listener;
+            list.OverrideWith(replacement);
+            detector.OnChanged -= listener;
+
+            Assert.AreEqual(1, callCount);
+            detector.Dispose();
+        }
+
         [Test, Description("Clear => OnChanged fires once?")]
         [TestCase(1, 2)]
         [TestCase(10, 99)]
@@ -125,6 +144,7 @@ namespace Calluna.Core.Tests
             list.Remove(itemA);
             list[0] = itemA;
             list.Swap(0, 1);
+            list.OverrideWith(new int[] { 7, 8 });
             list.Clear();
 
             detector.OnChanged -= listener;

@@ -1,3 +1,16 @@
+## [1.6.0] - 2026-05-13
+
+### Breaking Changes
+- `ReadonlyObservableList<TValue>` — new interface member `event Action OnContentsReplaced` has been added without a default implementation. Any class that directly implements this interface must now declare this event.
+- `ObservableList<TValue>.OverrideWith` — per-item events (`OnItemAdded`, `OnItemRemoved`, `OnItemReplaced`) no longer fire during a bulk replace. Only `OnContentsReplaced` fires once after all items have been replaced. Callers that subscribed to per-item events to react to `OverrideWith` must subscribe to `OnContentsReplaced` instead.
+
+### Added
+- `ObservableList<T>.OnContentsReplaced` — new event fired once when `OverrideWith` completes, replacing the previous per-item event sequence and enabling cheaper bulk-replace handling for subscribers.
+
+### Changed
+- `ObservableListChangeDetector<T>` — now subscribes to `OnContentsReplaced` so that its `OnChanged` event fires correctly after an `OverrideWith` call, without requiring any changes to call sites.
+- README — `Insert` method documented, `OverrideWith` event behaviour clarified to match the new `OnContentsReplaced` semantics, `Timer.Progress` boundary description corrected, and the Observable type hierarchy diagram fixed.
+
 ## [1.5.2] - 2026-05-11
 
 ### Added

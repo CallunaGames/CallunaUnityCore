@@ -6,6 +6,7 @@ Observable values notify listeners when their value changes.
 Use the `ReadonlyObservable<T>` interface to expose an `Observable<T>` to other classes without allowing external writes.
 
 ```c#
+abstract class Observable
 class Observable<T> : Observable, ReadonlyObservable<T>
 interface ReadonlyObservable<T>
 ```
@@ -95,10 +96,11 @@ private ObservableList<TValue> _listFromExisting = new ObservableList<TValue>(ex
 public ReadonlyObservableList<TValue> List => _list;
 ```
 
-#### Add / Remove / Clear
+#### Add / Insert / Remove / Clear
 ```c#
 _list.Add(item);
-_list.Remove(item);       // returns bool
+_list.Insert(index, item); // inserts at index; fires OnItemAdded
+_list.Remove(item);        // returns bool
 _list.RemoveAt(index);
 _list.Clear();
 ```
@@ -115,7 +117,9 @@ _list.Swap(indexA, indexB);
 
 #### Override Contents
 ```c#
-_list.OverrideWith(newItems); // replaces, removes, or adds items to match the new sequence
+// Replaces, removes, or adds items in-place to match the new sequence.
+// No per-item events are fired; OnContentsReplaced is raised once when done.
+_list.OverrideWith(newItems);
 ```
 
 #### Listen to Events
@@ -124,11 +128,12 @@ _list.OnItemAdded += (TValue item, int index) => { };
 _list.OnItemRemoved += (TValue item, int index) => { };
 _list.OnItemReplaced += (TValue newItem, TValue formerItem, int index) => { };
 _list.OnItemsSwapped += (TValue newAt0, int index0, TValue newAt1, int index1) => { };
-_list.OnClean += () => { };  // fires once when Clear() is called; OnItemRemoved is NOT fired per element
+_list.OnClean += () => { };             // fires once when Clear() is called; OnItemRemoved is NOT fired per element
+_list.OnContentsReplaced += () => { };  // fires once when OverrideWith() completes; no per-item events are raised
 ```
 
 #### Detect Any Change with ObservableListChangeDetector
-`ObservableListChangeDetector` routes all four item events and `OnClean` into a single `OnChanged` event, so you can react to any mutation — including `Clear()` — from one subscription.
+`ObservableListChangeDetector` routes all four item events, `OnClean`, and `OnContentsReplaced` into a single `OnChanged` event, so you can react to any mutation — including `Clear()` and `OverrideWith()` — from one subscription.
 ```c#
 using var detector = new ObservableListChangeDetector<TValue>(_list);
 detector.OnChanged += () => { Debug.Log("List changed"); };
@@ -295,7 +300,7 @@ Timer t = new Timer(coroutineHelper).StartWith(duration: 5f);
 #### Read Progress
 ```c#
 float elapsed    = timer.Elapsed;  // seconds elapsed
-float progress   = timer.Progress; // 0.0 – 1.0
+float progress   = timer.Progress; // 0.0 – 1.0 while running; 1.0 when stopped
 bool  isRunning  = timer.Running;
 ```
 
