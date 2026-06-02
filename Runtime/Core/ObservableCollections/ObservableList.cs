@@ -86,28 +86,45 @@ namespace Calluna
             OnItemsSwapped?.Invoke(item2, index1, item1, index2);
         }
         
-        // Walk both sequences in lock-step: replace overlapping positions, then
-        // remove any surplus items from the tail, then append any remaining new items.
-        // Mutations are applied directly to _items without firing per-item events;
-        // a single OnContentsReplaced is raised at the end.
         public void OverrideWith(IEnumerable<TValue> items)
         {
-            using IEnumerator<TValue> e = items.GetEnumerator();
+            _items.Clear();
+            _items.AddRange(items);
+            OnContentsReplaced?.Invoke();
+        }
+
+        // Fires per-item events (OnItemsSwapped, OnItemReplaced, OnItemAdded, OnItemRemoved)
+        // for each change. Use Swap when the desired item already exists at a later index
+        // (same item moved), Replace when the slot truly changes content, Add/RemoveAt for
+        // items entering/leaving the list. OnContentsReplaced is NOT fired.
+        public void OverrideWithEvents(IEnumerable<TValue> items)
+        {
+            var newItems = new List<TValue>(items);
+            var comparer = EqualityComparer<TValue>.Default;
 
             int i = 0;
-            while (i < _items.Count && e.MoveNext())
+            while (i < newItems.Count)
             {
-                _items[i] = e.Current;
+                if (i < _items.Count)
+                {
+                    if (!comparer.Equals(_items[i], newItems[i]))
+                    {
+                        int swapIdx = _items.IndexOf(newItems[i], i + 1);
+                        if (swapIdx >= 0)
+                            Swap(i, swapIdx);
+                        else
+                            Replace(newItems[i], i);
+                    }
+                }
+                else
+                {
+                    Add(newItems[i]);
+                }
                 i++;
             }
 
-            while (_items.Count > i)
-                _items.RemoveAt(i);
-
-            while (e.MoveNext())
-                _items.Add(e.Current);
-
-            OnContentsReplaced?.Invoke();
+            while (_items.Count > newItems.Count)
+                RemoveAt(_items.Count - 1);
         }
 
         private void Replace(TValue item, int index)

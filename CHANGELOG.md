@@ -1,3 +1,12 @@
+## [1.6.1] - 2026-06-02
+
+### Added
+- `ObservableList<T>.OverrideWithEvents(IEnumerable<T> items)` — new overload that performs a diff-and-patch update firing granular per-item events for each change: `OnItemsSwapped` when an item only changes position, `OnItemReplaced` when a slot's content changes, `OnItemAdded` for new items, and `OnItemRemoved` for departing items. `OnContentsReplaced` is not raised.
+
+### Changed
+- `ObservableList<T>.OverrideWith` — implementation simplified to `Clear` + `AddRange` internally; public contract is unchanged (`OnContentsReplaced` fires once, no per-item events).
+- README — `OverrideWithEvents` documented under Observable Collections; `OnContentsReplaced` usage note updated.
+
 ## [1.6.0] - 2026-05-13
 
 ### Breaking Changes

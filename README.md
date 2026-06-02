@@ -115,11 +115,19 @@ _list[index] = newItem;   // fires OnItemReplaced
 _list.Swap(indexA, indexB);
 ```
 
-#### Override Contents
+#### Override Contents (bulk)
 ```c#
-// Replaces, removes, or adds items in-place to match the new sequence.
+// Replaces all contents in-place to match the new sequence.
 // No per-item events are fired; OnContentsReplaced is raised once when done.
 _list.OverrideWith(newItems);
+```
+
+#### Override Contents (per-item events)
+```c#
+// Diff-and-patch update: fires OnItemsSwapped, OnItemReplaced, OnItemAdded, and
+// OnItemRemoved for each individual change. OnContentsReplaced is NOT fired.
+// Use this when listeners need to react to each slot change rather than a bulk reset.
+_list.OverrideWithEvents(newItems);
 ```
 
 #### Listen to Events
@@ -129,11 +137,11 @@ _list.OnItemRemoved += (TValue item, int index) => { };
 _list.OnItemReplaced += (TValue newItem, TValue formerItem, int index) => { };
 _list.OnItemsSwapped += (TValue newAt0, int index0, TValue newAt1, int index1) => { };
 _list.OnClean += () => { };             // fires once when Clear() is called; OnItemRemoved is NOT fired per element
-_list.OnContentsReplaced += () => { };  // fires once when OverrideWith() completes; no per-item events are raised
+_list.OnContentsReplaced += () => { };  // fires once when OverrideWith() completes; NOT fired by OverrideWithEvents()
 ```
 
 #### Detect Any Change with ObservableListChangeDetector
-`ObservableListChangeDetector` routes all four item events, `OnClean`, and `OnContentsReplaced` into a single `OnChanged` event, so you can react to any mutation — including `Clear()` and `OverrideWith()` — from one subscription.
+`ObservableListChangeDetector` routes all four item events, `OnClean`, and `OnContentsReplaced` into a single `OnChanged` event, so you can react to any mutation — including `Clear()`, `OverrideWith()`, and `OverrideWithEvents()` — from one subscription.
 ```c#
 using var detector = new ObservableListChangeDetector<TValue>(_list);
 detector.OnChanged += () => { Debug.Log("List changed"); };

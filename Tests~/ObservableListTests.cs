@@ -420,6 +420,117 @@ namespace Calluna.Core.Tests
             Assert.IsFalse(addedFired);
         }
 
+        [Test, Description("OverrideWithEvents result => Final list matches replacement?")]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 10, 20 })]
+        [TestCase(new int[] { 1 }, new int[] { 10, 20, 30 })]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 })]
+        [TestCase(new int[] { }, new int[] { 1, 2, 3 })]
+        [TestCase(new int[] { 1, 2, 3 }, new int[] { })]
+        public void ObservableList_OverrideWithEvents_ResultContentsCorrect(int[] initial, int[] replacement)
+        {
+            var list = new ObservableList<int>(initial);
+            list.OverrideWithEvents(replacement);
+            Assert.AreEqual(replacement.Length, list.Count);
+            for (int i = 0; i < replacement.Length; i++)
+                Assert.AreEqual(replacement[i], list[i]);
+        }
+
+        [Test, Description("OverrideWithEvents swap-only change => OnItemsSwapped fires, no add/remove/replace?")]
+        public void ObservableList_OverrideWithEvents_SwapOnly_OnItemsSwappedFiresNoOtherEvents()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2, 3 });
+            bool swapFired = false;
+            bool anyOtherFired = false;
+            list.OnItemsSwapped += (_, _, _, _) => swapFired = true;
+            ItemChangeEvent<int> changeListener = (_, _) => anyOtherFired = true;
+            ItemReplaceEvent<int> replaceListener = (_, _, _) => anyOtherFired = true;
+            list.OnItemAdded    += changeListener;
+            list.OnItemRemoved  += changeListener;
+            list.OnItemReplaced += replaceListener;
+
+            list.OverrideWithEvents(new[] { 2, 1, 3 });
+
+            Assert.IsTrue(swapFired);
+            Assert.IsFalse(anyOtherFired);
+        }
+
+        [Test, Description("OverrideWithEvents swap-only => Positions are correct after swap?")]
+        public void ObservableList_OverrideWithEvents_SwapOnly_PositionsCorrect()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2, 3 });
+            list.OverrideWithEvents(new[] { 2, 1, 3 });
+            Assert.AreEqual(2, list[0]);
+            Assert.AreEqual(1, list[1]);
+            Assert.AreEqual(3, list[2]);
+        }
+
+        [Test, Description("OverrideWithEvents removed item => OnItemRemoved fires with correct args?")]
+        public void ObservableList_OverrideWithEvents_RemovedItem_OnItemRemovedFires()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2, 3 });
+            int removedItem = -1;
+            list.OnItemRemoved += (item, _) => removedItem = item;
+
+            list.OverrideWithEvents(new[] { 1, 3 });
+
+            Assert.AreEqual(2, removedItem);
+        }
+
+        [Test, Description("OverrideWithEvents added item => OnItemAdded fires with correct args?")]
+        public void ObservableList_OverrideWithEvents_AddedItem_OnItemAddedFires()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2 });
+            int addedItem = -1;
+            list.OnItemAdded += (item, _) => addedItem = item;
+
+            list.OverrideWithEvents(new[] { 1, 2, 99 });
+
+            Assert.AreEqual(99, addedItem);
+        }
+
+        [Test, Description("OverrideWithEvents replaced item => OnItemReplaced fires with correct former and new?")]
+        public void ObservableList_OverrideWithEvents_ReplacedItem_OnItemReplacedFires()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2, 3 });
+            int receivedNew = -1;
+            int receivedFormer = -1;
+            list.OnItemReplaced += (newItem, formerItem, _) => { receivedNew = newItem; receivedFormer = formerItem; };
+
+            list.OverrideWithEvents(new[] { 1, 99, 3 });
+
+            Assert.AreEqual(99, receivedNew);
+            Assert.AreEqual(2, receivedFormer);
+        }
+
+        [Test, Description("OverrideWithEvents unchanged list => no events fire?")]
+        public void ObservableList_OverrideWithEvents_NoChanges_NoEventsFire()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2, 3 });
+            bool anyFired = false;
+            ItemChangeEvent<int> changeListener = (_, _) => anyFired = true;
+            ItemReplaceEvent<int> replaceListener = (_, _, _) => anyFired = true;
+            list.OnItemAdded    += changeListener;
+            list.OnItemRemoved  += changeListener;
+            list.OnItemReplaced += replaceListener;
+            list.OnItemsSwapped += (_, _, _, _) => anyFired = true;
+
+            list.OverrideWithEvents(new[] { 1, 2, 3 });
+
+            Assert.IsFalse(anyFired);
+        }
+
+        [Test, Description("OverrideWithEvents => OnContentsReplaced does not fire?")]
+        public void ObservableList_OverrideWithEvents_OnContentsReplacedNotFired()
+        {
+            var list = new ObservableList<int>(new[] { 1, 2, 3 });
+            bool fired = false;
+            list.OnContentsReplaced += () => fired = true;
+
+            list.OverrideWithEvents(new[] { 10, 20, 30 });
+
+            Assert.IsFalse(fired);
+        }
+
         [Test, Description("GetEnumerator => Iterates all items in order?")]
         public void ObservableList_GetEnumerator_IteratesAllItemsInOrder<T>(
             [ValueSource(nameof(_testValues))] TestValues<T> values)
