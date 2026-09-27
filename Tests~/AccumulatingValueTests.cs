@@ -464,5 +464,34 @@ namespace Calluna.Core.Tests
             acc.Value.OnChanged -= listener;
             Assert.IsTrue(fired);
         }
+
+        // --- Value without parts ---
+
+        [Test, Description("No parts => Value matches the mode's neutral value?")]
+        public void AccumulatingValue_WithoutParts_HasNeutralValue()
+        {
+            Assert.AreEqual(0, new AccumulatingIntValue().Value.Value);
+            Assert.AreEqual(0f, new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum).Value.Value);
+            Assert.AreEqual(1f, new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply).Value.Value);
+            Assert.IsFalse(new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any).Value.Value);
+            Assert.IsTrue(new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All).Value.Value);
+        }
+
+        [Test, Description("All parts removed again => Value equals the value it started with?")]
+        public void AccumulatingValue_AllPartsRemoved_ReturnsToInitialValue()
+        {
+            var all = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
+            bool allInitial = all.Value.Value;
+            all.Add("a", false);
+            all.Remove("a");
+
+            var product = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply);
+            float productInitial = product.Value.Value;
+            product.Add("a", 5f);
+            product.Remove("a");
+
+            Assert.AreEqual(allInitial, all.Value.Value);
+            Assert.AreEqual(productInitial, product.Value.Value);
+        }
     }
 }

@@ -58,7 +58,7 @@ Runtime/Core/          # Production source, organized by feature
 Editor/                # Editor-only tools (PackageSamplesTestsToggler)
 Tests~/                # NUnit tests (hidden from Package Manager by default)
 Samples~/              # Sample MonoBehaviours per feature (hidden by default)
-package.json           # UPM metadata (v1.1.0, Unity 6000.33)
+package.json           # UPM metadata (minimum Unity 6000.0.33f1)
 ```
 
 ## Conventions

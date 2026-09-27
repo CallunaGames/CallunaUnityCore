@@ -200,6 +200,16 @@ AccumulatingBoolValue anyTrue = new AccumulatingBoolValue(AccumulatingBoolValue.
 AccumulatingBoolValue allTrue = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
 ```
 
+#### Value Without Parts
+Without any parts, `Value` holds the mode's neutral value - the same value it returns to once all parts are removed again:
+
+| Type / mode | Value without parts |
+|---|---|
+| `AccumulatingIntValue`, `AccumulatingFloatValue` `Sum` | `0` |
+| `AccumulatingFloatValue` `Multiply` | `1` |
+| `AccumulatingBoolValue` `Any` | `false` |
+| `AccumulatingBoolValue` `All` | `true` |
+
 ---
 
 ## Tween
@@ -252,7 +262,7 @@ class Vector3ValueTweener : ValueTweener<Vector3>
 | Member | Description |
 |---|---|
 | `IsTweening` | `true` while a tween coroutine is running. |
-| `Perform(start, end, duration, tweenType, updateAction)` | Starts (or replaces) a tween. When `duration <= 0`, `updateAction` is called immediately with `end` and no coroutine is started. |
+| `Perform(start, end, duration, tweenType, updateAction)` | Starts (or replaces) a tween. When `duration <= 0`, a running tween is stopped, `updateAction` is called immediately with `end` and no coroutine is started. |
 | `PerformAndWait(start, end, duration, tweenType, updateAction)` | Same as `Perform`, but returns a `CustomYieldInstruction` that completes when the tween finishes. Use with `yield return` to sequence work after the tween. |
 | `Stop()` | Cancels any in-progress tween and sets `IsTweening` to `false`. |
 | `Dispose()` | Calls `Stop()`. |
@@ -410,7 +420,7 @@ class DontDestroyOnLoad : MonoBehaviour
 
 ## Event Bus
 
-`IEventBus` is a typed publish/subscribe message bus. Use it to decouple publishers from subscribers — neither side needs a direct reference to the other. The concrete `EventBus` class uses breadth-first, re-entrancy-safe dispatch: events published from inside a listener are queued and processed after the current dispatch batch completes.
+`IEventBus` is a typed publish/subscribe message bus. Use it to decouple publishers from subscribers — neither side needs a direct reference to the other. The concrete `EventBus` class uses breadth-first, re-entrancy-safe dispatch: events published from inside a listener are queued and processed after the current dispatch batch completes. A listener throwing an exception is logged via `Debug.LogException` and doesn't stop the other listeners or the delivery of queued events. Listeners subscribed or unsubscribed during dispatch take effect from the next delivered event on.
 
 ```c#
 interface IEventBus

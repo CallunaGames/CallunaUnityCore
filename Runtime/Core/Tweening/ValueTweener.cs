@@ -27,12 +27,14 @@ namespace Calluna
         /// <paramref name="duration"/> seconds, invoking <paramref name="updateAction"/> each frame.
         /// When <paramref name="duration"/> is zero or negative, <paramref name="updateAction"/>
         /// is invoked immediately with <paramref name="end"/> and no coroutine is started.
-        /// Any in-progress tween is cancelled before the new one begins.
+        /// Any in-progress tween is cancelled before the new one begins - in both cases, so it
+        /// can't overwrite the new value afterwards.
         /// </summary>
         public void Perform(TValue start, TValue end, float duration, TweenType tweenType, Action<TValue> updateAction)
         {
             if (duration <= 0f)
             {
+                Stop();
                 updateAction(end);
                 return;
             }

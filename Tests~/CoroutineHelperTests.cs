@@ -99,6 +99,19 @@ namespace Calluna.Core.Tests
             Assert.IsFalse(_helper.HasRoutineWith("test"));
         }
 
+        // ---- Destruction ----
+
+        [UnityTest, Description("Helper destroyed while a routine runs => Routine no longer tracked?")]
+        public IEnumerator CoroutineHelper_Destroyed_ForgetsRunningRoutines()
+        {
+            _helper.StartWithID(InfiniteRoutine(), "test");
+            yield return null;
+
+            UnityEngine.Object.DestroyImmediate(_helper);
+
+            Assert.IsFalse(_helper.HasRoutineWith("test"));
+        }
+
         private static IEnumerator InfiniteRoutine()
         {
             while (true) yield return null;

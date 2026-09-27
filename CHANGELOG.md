@@ -1,3 +1,17 @@
+## [Unreleased]
+
+### Changed
+- `EventBus` — a listener throwing an exception no longer stops the remaining listeners of that event, nor leaves queued events waiting for the next `Publish`. The exception is logged via `Debug.LogException` instead of propagating to the publisher. Listeners are stored per event type in an array replaced on (un)subscribe, so `Publish` stays allocation-free; listeners subscribed or unsubscribed during dispatch still take effect from the next delivered event on.
+- `AccumulatingValue<T>` — `Value` now starts at the mode's neutral value, the same value it returns to once all parts are removed: `AccumulatingBoolValue` `All` starts `true` (was `false`), `AccumulatingFloatValue` `Multiply` starts `1` (was `0`). Recalculation no longer allocates an enumerator.
+- `package.json` — minimum Unity version corrected to `6000.0.33f1` (`"unity": "6000.0"`, `"unityRelease": "33f1"`); it read `6000.33`, a version that doesn't exist.
+
+### Breaking Changes
+- `AccumulatingValue<T>.CalculateValue` — the protected abstract method now takes `IReadOnlyList<T>` instead of `IEnumerable<T>`. Only affects classes deriving from `AccumulatingValue<T>` outside this package; subclasses call the new protected `Recalculate()` at the end of their constructor to set their initial value.
+
+### Fixed
+- `ValueTweener<T>.Perform` — with a duration of zero or less, a tween already running on the same tweener is now stopped. Before, it kept running and overwrote the value just set.
+- `CoroutineHelper` — destroying it now also forgets its routines, so `HasRoutineWith` no longer reports stopped routines as running.
+
 ## [1.6.1] - 2026-06-02
 
 ### Added

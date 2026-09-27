@@ -118,6 +118,22 @@ namespace Calluna.Core.Tests
             Assert.IsFalse(tweener.IsTweening);
         }
 
+        [UnityTest]
+        [Description("Zero-duration Perform while a tween runs => running tween stops and can't overwrite the value?")]
+        public IEnumerator FloatValueTweener_Perform_ZeroDurationWhileTweening_StopsRunningTween()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+            float received = -1f;
+            tweener.Perform(0f, 10f, 5f, TweenType.Linear, v => received = v);
+
+            tweener.Perform(0f, 3f, 0f, TweenType.Linear, v => received = v);
+            yield return null;
+            yield return null;
+
+            Assert.AreEqual(3f, received, 0.0001f);
+            Assert.IsFalse(tweener.IsTweening);
+        }
+
         // ── PerformAndWait ───────────────────────────────────────────────────────
 
         [Test]

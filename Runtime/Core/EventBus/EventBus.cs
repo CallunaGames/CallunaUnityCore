@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Calluna
 {
@@ -12,10 +13,16 @@ namespace Calluna
     /// original caller, so every reaction to a given event completes before any second-order
     /// effects begin.
     ///
+    /// <b>Exceptions:</b> a listener throwing is logged via <see cref="Debug.LogException(Exception)"/>
+    /// and does not stop the remaining listeners of that event, nor the delivery of queued events.
+    /// Listeners are expected to be independent of each other.
+    ///
+    /// <b>Listener changes during dispatch:</b> listeners subscribed or unsubscribed while an event
+    /// is being delivered take effect from the next delivered event on.
+    ///
     /// Allocation profile: zero allocations per <see cref="Publish{TEvent}"/> call for
     /// reference-type events after initial warmup. Value-type events incur one box per publish.
-    /// A typed dispatch delegate is allocated once per event type on the first
-    /// <see cref="Subscribe{TEvent}"/> call and reused thereafter.
+    /// Subscribing and unsubscribing allocate a new listener array for the event type.
     ///
     /// <b>Threading:</b> main thread only — no locking is applied.
     ///
@@ -25,7 +32,9 @@ namespace Calluna
     /// </summary>
     public class EventBus : IEventBus
     {
-        private readonly Dictionary<Type, Delegate>        _listeners   = new();
+        // Per event type an Action<TEvent>[], replaced as a whole on every (un)subscribe - so a
+        // dispatch iterates a snapshot that can't change underneath it.
+        private readonly Dictionary<Type, object>          _listeners   = new();
         private readonly Dictionary<Type, Action<object>>  _dispatchers = new();
         private readonly Queue<(Type type, object evt)>    _queue       = new();
         private bool _isFlushing;
@@ -44,31 +53,55 @@ namespace Calluna
         public void Subscribe<TEvent>(Action<TEvent> listener)
         {
             Type key = typeof(TEvent);
-            _listeners[key] = _listeners.TryGetValue(key, out Delegate existing)
-                ? Delegate.Combine(existing, listener)
-                : listener;
-            _dispatchers.TryAdd(key, obj => InvokeListeners<TEvent>((TEvent)obj));
+            Action<TEvent>[] current = GetListeners<TEvent>();
+            Action<TEvent>[] next = new Action<TEvent>[current.Length + 1];
+            Array.Copy(current, next, current.Length);
+            next[current.Length] = listener;
+            _listeners[key] = next;
+            _dispatchers.TryAdd(key, obj => InvokeListeners((TEvent)obj));
         }
 
         /// <summary>
-        /// Remove a previously registered <paramref name="listener"/>. Safe to call if the
-        /// listener was never subscribed.
+        /// Remove a previously registered <paramref name="listener"/> - its most recent registration,
+        /// if it was registered more than once. Safe to call if the listener was never subscribed.
         /// </summary>
         public void Unsubscribe<TEvent>(Action<TEvent> listener)
         {
+            Action<TEvent>[] current = GetListeners<TEvent>();
+            int index = Array.LastIndexOf(current, listener);
+            if (index < 0) return;
+
             Type key = typeof(TEvent);
-            if (!_listeners.TryGetValue(key, out Delegate existing)) return;
-            Delegate remaining = Delegate.Remove(existing, listener);
-            if (remaining == null)
+            if (current.Length == 1)
+            {
                 _listeners.Remove(key);
-            else
-                _listeners[key] = remaining;
+                return;
+            }
+
+            Action<TEvent>[] next = new Action<TEvent>[current.Length - 1];
+            Array.Copy(current, 0, next, 0, index);
+            Array.Copy(current, index + 1, next, index, current.Length - index - 1);
+            _listeners[key] = next;
         }
+
+        private Action<TEvent>[] GetListeners<TEvent>() =>
+            _listeners.TryGetValue(typeof(TEvent), out object listeners)
+                ? (Action<TEvent>[])listeners
+                : Array.Empty<Action<TEvent>>();
 
         private void InvokeListeners<TEvent>(TEvent evt)
         {
-            if (!_listeners.TryGetValue(typeof(TEvent), out Delegate listener)) return;
-            ((Action<TEvent>)listener)(evt);
+            foreach (Action<TEvent> listener in GetListeners<TEvent>())
+            {
+                try
+                {
+                    listener(evt);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         private void Flush()

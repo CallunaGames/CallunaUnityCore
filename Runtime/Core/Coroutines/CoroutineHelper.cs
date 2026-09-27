@@ -12,6 +12,9 @@ namespace Calluna
         private void OnDestroy()
         {
             StopAllCoroutines();
+            // Otherwise the stopped routines' ids would stay registered, and HasRoutineWith would
+            // keep reporting them as running.
+            _coroutines.Clear();
         }
 
         public void StartWithID(IEnumerator enumerator, string id)
