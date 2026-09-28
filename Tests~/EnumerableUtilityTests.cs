@@ -1,6 +1,9 @@
 using System;
 using NUnit.Framework;
 
+// Covers the obsolete EnumerableUtility until its removal in 2.0.0.
+#pragma warning disable CS0618
+
 namespace Calluna.Core.Tests
 {
     public class EnumerableUtilityTests

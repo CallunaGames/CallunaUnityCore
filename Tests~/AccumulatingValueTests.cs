@@ -1,6 +1,9 @@
 using System;
 using NUnit.Framework;
 
+// Also covers the obsolete string-id APIs until their removal in 2.0.0.
+#pragma warning disable CS0618
+
 namespace Calluna.Core.Tests
 {
     public class AccumulatingValueTests
@@ -503,6 +506,88 @@ namespace Calluna.Core.Tests
 
             Assert.AreEqual(allInitial, all.Value.Value);
             Assert.AreEqual(productInitial, product.Value.Value);
+        }
+
+        // --- Parts ---
+
+        [Test, Description("AddPart => Value includes the part?")]
+        public void AccumulatingValue_AddPart_IncludedInValue()
+        {
+            var acc = new AccumulatingIntValue();
+            acc.AddPart(3);
+            acc.AddPart(4);
+            Assert.AreEqual(7, acc.Value.Value);
+        }
+
+        [Test, Description("Part value set => Value recalculated?")]
+        public void AccumulatingValue_PartValueSet_Recalculates()
+        {
+            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply);
+            AccumulatingValuePart<float> part = acc.AddPart(2f);
+            acc.AddPart(3f);
+
+            part.Value = 5f;
+
+            Assert.AreEqual(15f, acc.Value.Value, 0.0001f);
+            Assert.AreEqual(5f, part.Value, 0.0001f);
+        }
+
+        [Test, Description("Part disposed => Removed from value, disposing again does nothing?")]
+        public void AccumulatingValue_PartDisposed_RemovedOnce()
+        {
+            var acc = new AccumulatingIntValue();
+            AccumulatingValuePart<int> part = acc.AddPart(3);
+            acc.AddPart(4);
+
+            part.Dispose();
+            part.Dispose();
+
+            Assert.AreEqual(4, acc.Value.Value);
+            Assert.IsTrue(part.IsDisposed);
+        }
+
+        [Test, Description("Disposed part value set => Throws ObjectDisposedException?")]
+        public void AccumulatingValue_DisposedPartValueSet_Throws()
+        {
+            var acc = new AccumulatingIntValue();
+            AccumulatingValuePart<int> part = acc.AddPart(3);
+            part.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => part.Value = 5);
+            Assert.AreEqual(0, acc.Value.Value);
+        }
+
+        [Test, Description("Two parts with equal values, one disposed => Other still counted?")]
+        public void AccumulatingValue_EqualParts_DisposeOne_OtherStillCounted()
+        {
+            var acc = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+            AccumulatingValuePart<bool> first = acc.AddPart(true);
+            acc.AddPart(true);
+
+            first.Dispose();
+
+            Assert.IsTrue(acc.Value.Value);
+        }
+
+        [Test, Description("Parts and string-id parts => Both included?")]
+        public void AccumulatingValue_PartsAndStringIds_BothIncluded()
+        {
+            var acc = new AccumulatingIntValue();
+            acc.AddPart(3);
+            acc.Add("a", 4);
+            Assert.AreEqual(7, acc.Value.Value);
+        }
+
+        [Test, Description("All parts disposed => Back to neutral value?")]
+        public void AccumulatingValue_AllPartsDisposed_ReturnsToNeutralValue()
+        {
+            var all = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
+            AccumulatingValuePart<bool> part = all.AddPart(false);
+            Assert.IsFalse(all.Value.Value);
+
+            part.Dispose();
+
+            Assert.IsTrue(all.Value.Value);
         }
     }
 }

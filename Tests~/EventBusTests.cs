@@ -247,6 +247,57 @@ namespace Calluna.Core.Tests
             Assert.AreSame(published, received);
         }
 
+        // ── Subscribe returning a subscription ───────────────────────────────────
+
+        [Test]
+        public void EventBus_SubscriptionDisposed_ListenerNoLongerCalled()
+        {
+            int calls = 0;
+            IDisposable subscription = _bus.Subscribe<EventA>(_ => calls++);
+
+            _bus.Publish(new EventA());
+            subscription.Dispose();
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test]
+        public void EventBus_SubscriptionDisposedTwice_RemovesOnlyOneRegistration()
+        {
+            int calls = 0;
+            Action<EventA> listener = _ => calls++;
+            IDisposable first = _bus.Subscribe(listener);
+            _bus.Subscribe(listener);
+
+            first.Dispose();
+            first.Dispose();
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test]
+        public void EventBus_SubscriptionsInBag_AllRemovedOnDispose()
+        {
+            int calls = 0;
+            SubscriptionBag bag = new SubscriptionBag();
+            bag.Add(_bus.Subscribe<EventA>(_ => calls++));
+            bag.Add(_bus.Subscribe<EventB>(_ => calls++));
+
+            bag.Dispose();
+            _bus.Publish(new EventA());
+            _bus.Publish(new EventB());
+
+            Assert.AreEqual(0, calls);
+        }
+
+        [Test]
+        public void EventBus_SubscribeNull_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => _bus.Subscribe<EventA>(null));
+        }
+
         // ── Test event types ─────────────────────────────────────────────────────
 
         private class EventA { }

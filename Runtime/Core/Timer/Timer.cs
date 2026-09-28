@@ -11,15 +11,13 @@ namespace Calluna
         public float Elapsed { get; private set; }
         public bool Running { get; private set; }
         
-        private readonly CoroutineHelper _coroutineHelper;
-        private readonly string _id;
+        private readonly CoroutineSlot _slot;
         
         private float _duration;
 
         public Timer(CoroutineHelper coroutineHelper)
         {
-            _coroutineHelper = coroutineHelper;
-            _id = Guid.NewGuid().ToString();
+            _slot = new CoroutineSlot(coroutineHelper);
         }
 
         public void Dispose() => Stop();
@@ -34,13 +32,13 @@ namespace Calluna
             Stop();
             _duration = duration;
             Running = true;
-            _coroutineHelper.StartWithID(RunTimer(unscaled), _id);
+            _slot.Run(RunTimer(unscaled));
             return this;
         }
 
         public void Stop()
         {
-            _coroutineHelper.StopWithID(_id);
+            _slot.Stop();
             _duration = 0;
             Elapsed = 0;
             Running = false;

@@ -51,7 +51,11 @@ namespace Calluna
         private static IEnumerable<string> Describe(Delegate listeners) =>
             listeners == null
                 ? Enumerable.Empty<string>()
-                : listeners.GetInvocationList().Select(listener => $"{OwnerOf(listener.Method)}.{listener.Method.Name}");
+                : listeners.GetInvocationList().SelectMany(listener =>
+                    // Subscribed via Observable.Subscribe - report the callback, not its adapter.
+                    listener.Target is WrappedListener wrapped
+                        ? Describe(wrapped.Listener)
+                        : new[] { $"{OwnerOf(listener.Method)}.{listener.Method.Name}" });
 
         // Lambdas live in compiler-generated nested classes - name the class that wrote them instead.
         private static string OwnerOf(MethodBase method)

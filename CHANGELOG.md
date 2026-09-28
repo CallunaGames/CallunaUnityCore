@@ -1,3 +1,33 @@
+## [1.7.0-pre.2] - 2026-09-28
+
+Pre-release adding the new APIs of 1.7.0. The APIs they replace still work but are marked `[Obsolete]` and will be removed in 2.0.0, so projects can migrate step by step.
+
+### Added
+- `Subscription` and `SubscriptionBag` — an `IDisposable` ending a subscription, and a collection ending all added subscriptions (any `IDisposable`) on `Dispose`, in reverse order. A subscription throwing while being disposed is logged and doesn't stop the others.
+- `Observable<T>.Subscribe(Action)` and `Subscribe(Action<T, T>)` (also on `ReadonlyObservable<T>`) — return a subscription that removes the callback when disposed.
+- `Observable<T>(T value)` constructor.
+- `CoroutineHelper.Run(IEnumerator)` returning a `CoroutineHandle` (`IsRunning`, `Stop()`, yieldable inside coroutines). The handle reports the routine as ended when it completes, throws (the exception is still logged), is stopped, or the helper is destroyed.
+- `CoroutineSlot` — runs at most one routine at a time on a `CoroutineHelper`; running a new one stops the former. Replaces unique ids generated per class for `ReplaceWithID`.
+- `AccumulatingValue<T>.AddPart(T)` returning an `AccumulatingValuePart<T>` — set its `Value` to change the contribution, dispose it to remove it.
+- `UpdateScheduler.ScheduleOnce(Action, SchedulePhase)` and `Cancel(Action)` — deduplicate by the callback itself instead of a string id.
+- `ValueTweener<T>.UseUnscaledTime` — advance tweens with `Time.unscaledDeltaTime` (default stays `Time.deltaTime`).
+- `Id<TDefinition>` — a value-type key compared by its string (ordinal), typed by the definition it identifies; usable without loading assets, e.g. in tests or as dictionary keys.
+- `ScriptableObjectId<TSelf>` — `ScriptableObjectId` exposing its id as `Key` (`Id<TSelf>`). Existing classes can switch to it without losing their serialized ids.
+- `ScriptableObjectIdValidation.FindProblems` and, in the editor, `ScriptableObjectIdValidator.FindProblems()` plus the menu **Calluna > Diagnostics > Validate ScriptableObject Ids** — report empty ids and ids used several times within a type.
+
+### Changed
+- `IEventBus.Subscribe` / `EventBus.Subscribe` — return a subscription (`IDisposable`) that unsubscribes the listener when disposed; subscribing `null` throws `ArgumentNullException`. Source-compatible for callers; classes implementing `IEventBus` themselves have to return an `IDisposable`.
+- `ReadonlyObservable<T>` — new members `Subscribe(Action)` and `Subscribe(Action<T, T>)`. Only affects classes implementing the interface outside this package.
+- `Timer` and `ValueTweener<T>` — run on a `CoroutineSlot` instead of a generated string id.
+- `ObservableDiagnostics` — listeners added via `Subscribe` are reported by the subscribed callback rather than an internal adapter.
+
+### Deprecated
+- The implicit conversion from `T` to `Observable<T>` — use `new Observable<T>(value)`. Assigning a value to an observable field that way replaced the observable and dropped its listeners. (The conversion from `Observable<T>` to `T` stays.)
+- `CoroutineHelper.StartWithID`, `ReplaceWithID`, `StopWithID`, `HasRoutineWith` — use `Run` / `CoroutineHandle` / `CoroutineSlot`.
+- `AccumulatingValue<T>.Add`, `Set`, `Remove`, `TryGetValuePart` and the string indexer — use `AddPart`.
+- `UpdateScheduler.ScheduleOnce(string, Action, SchedulePhase)` and `Cancel(string)` — use the overloads taking the callback.
+- `EnumerableUtility` — iterating an `IEnumerable<T>` allocates an enumerator for most collections, so it doesn't avoid allocations as intended.
+
 ## [1.7.0-pre.1] - 2026-09-28
 
 Pre-release for testing in projects; the new APIs planned for 1.7.0 (IDisposable subscriptions, coroutine handles, accumulating value parts, Id<TDefinition>) follow in later pre-releases.

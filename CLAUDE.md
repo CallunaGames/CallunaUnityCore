@@ -38,8 +38,8 @@ All runtime code lives under the `Calluna` namespace. The single runtime assembl
 - Custom delegates are defined in `ObservableCollectionDelegates.cs`.
 
 **CoroutineHelper / Timer**
-- `CoroutineHelper` (MonoBehaviour) wraps Unity coroutines with string IDs to prevent duplicates and allow replacement.
-- `Timer` uses `CoroutineHelper` internally, implements `IDisposable`, tracks `Progress` (0–1) and `Elapsed` time, and fires `OnDone`.
+- `CoroutineHelper` (MonoBehaviour) runs coroutines for plain C# classes: `Run` returns a `CoroutineHandle`; `CoroutineSlot` keeps one routine of a kind running. The string-ID methods are obsolete (removal in 2.0.0).
+- `Timer` uses a `CoroutineSlot` internally, implements `IDisposable`, tracks `Progress` (0–1) and `Elapsed` time, and fires `OnDone`.
 
 **EnumerableUtility**
 - Static utility class under `Runtime/Core/Utility/`.

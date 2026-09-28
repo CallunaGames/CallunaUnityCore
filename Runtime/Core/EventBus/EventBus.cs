@@ -27,8 +27,10 @@ namespace Calluna
     /// <b>Threading:</b> main thread only — no locking is applied.
     ///
     /// <b>Lifetime:</b> intended as a singleton bound at <c>AppContext</c> scope. Listeners
-    /// must call <see cref="Unsubscribe{TEvent}"/> in <c>Cleanable.Clean()</c>; failing to do
-    /// so prevents garbage collection of the subscriber for the lifetime of the bus.
+    /// must be unsubscribed in <c>Cleanable.Clean()</c> - by disposing the subscription returned by
+    /// <see cref="Subscribe{TEvent}"/> (e.g. via a <see cref="SubscriptionBag"/>) or by calling
+    /// <see cref="Unsubscribe{TEvent}"/>; failing to do so prevents garbage collection of the
+    /// subscriber for the lifetime of the bus.
     /// </summary>
     public class EventBus : IEventBus
     {
@@ -50,8 +52,11 @@ namespace Calluna
         /// Register <paramref name="listener"/> to be called whenever <typeparamref name="TEvent"/> is published.
         /// Registering the same listener twice results in it being called twice per publish.
         /// </summary>
-        public void Subscribe<TEvent>(Action<TEvent> listener)
+        /// <returns>A subscription that unsubscribes <paramref name="listener"/> when disposed.</returns>
+        public IDisposable Subscribe<TEvent>(Action<TEvent> listener)
         {
+            if (listener == null)
+                throw new ArgumentNullException(nameof(listener));
             Type key = typeof(TEvent);
             Action<TEvent>[] current = GetListeners<TEvent>();
             Action<TEvent>[] next = new Action<TEvent>[current.Length + 1];
@@ -59,6 +64,7 @@ namespace Calluna
             next[current.Length] = listener;
             _listeners[key] = next;
             _dispatchers.TryAdd(key, obj => InvokeListeners((TEvent)obj));
+            return new Subscription(() => Unsubscribe(listener));
         }
 
         /// <summary>

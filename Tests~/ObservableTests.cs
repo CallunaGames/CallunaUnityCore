@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
+
+// Also covers the obsolete implicit conversion until its removal in 2.0.0.
+#pragma warning disable CS0618
 
 namespace Calluna.Core.Tests
 {
@@ -179,6 +183,79 @@ namespace Calluna.Core.Tests
             Assert.IsTrue(called, "A destroyed Unity object equals null, but is a different reference");
         }
 
+        // ── Constructor / Subscribe ──────────────────────────────────────────────
+
+        [Test, Description("Constructed with a value => Holds it?")]
+        public void Observable_ConstructedWithValue_HoldsValue()
+        {
+            Observable<int> observable = new Observable<int>(5);
+            Assert.AreEqual(5, observable.Value);
+        }
+
+        [Test, Description("Subscribe(Action) => Called on change, not after dispose?")]
+        public void Observable_SubscribeAction_CalledUntilDisposed()
+        {
+            Observable<int> observable = new Observable<int>(0);
+            int calls = 0;
+            IDisposable subscription = observable.Subscribe(() => calls++);
+
+            observable.Value = 1;
+            subscription.Dispose();
+            observable.Value = 2;
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test, Description("Subscribe(Action<T, T>) => Receives former and new value, not after dispose?")]
+        public void Observable_SubscribeWithValues_ReceivesValuesUntilDisposed()
+        {
+            Observable<string> observable = new Observable<string>("a");
+            List<(string, string)> received = new List<(string, string)>();
+            IDisposable subscription = observable.Subscribe((former, next) => received.Add((former, next)));
+
+            observable.Value = "b";
+            subscription.Dispose();
+            observable.Value = "c";
+
+            CollectionAssert.AreEqual(new[] { ("a", "b") }, received);
+        }
+
+        [Test, Description("Subscribe same callback twice, dispose one => Other still called?")]
+        public void Observable_SubscribeSameCallbackTwice_DisposeOne_OtherStillCalled()
+        {
+            Observable<int> observable = new Observable<int>(0);
+            int calls = 0;
+            Action callback = () => calls++;
+            IDisposable first = observable.Subscribe(callback);
+            observable.Subscribe(callback);
+
+            first.Dispose();
+            observable.Value = 1;
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test, Description("Subscribe via ReadonlyObservable => Called on change?")]
+        public void Observable_SubscribeViaReadonlyInterface_Called()
+        {
+            Observable<int> observable = new Observable<int>(0);
+            ReadonlyObservable<int> readonlyObservable = observable;
+            int calls = 0;
+            using (readonlyObservable.Subscribe(() => calls++))
+                observable.Value = 1;
+            observable.Value = 2;
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test, Description("Subscribe null => Throws ArgumentNullException?")]
+        public void Observable_SubscribeNull_Throws()
+        {
+            Observable<int> observable = new Observable<int>();
+            Assert.Throws<ArgumentNullException>(() => observable.Subscribe((Action)null));
+            Assert.Throws<ArgumentNullException>(() => observable.Subscribe((Action<int, int>)null));
+        }
+
 #if UNITY_EDITOR
         // ── Diagnostics ──────────────────────────────────────────────────────────
 
@@ -222,6 +299,28 @@ namespace Calluna.Core.Tests
                 ObservableDiagnostics.LogUnchangedValues = false;
             }
         }
+
+        [Test, Description("Diagnostics on, listener added via Subscribe => Reports the subscribed callback, not its adapter?")]
+        public void ObservableDiagnostics_SubscribedListener_ReportsCallbackOwner()
+        {
+            ObservableDiagnostics.ResetReportedSites();
+            ObservableDiagnostics.LogUnchangedValues = true;
+            try
+            {
+                Observable<int> observable = new Observable<int>(3);
+                using (observable.Subscribe(OnDiagnosticsTestChanged))
+                {
+                    LogAssert.Expect(LogType.Warning, new Regex(@"no longer notifies: ObservableTests\.OnDiagnosticsTestChanged"));
+                    observable.Value = 3;
+                }
+            }
+            finally
+            {
+                ObservableDiagnostics.LogUnchangedValues = false;
+            }
+        }
+
+        private static void OnDiagnosticsTestChanged() { }
 #endif
 
         public struct TestValues<T>

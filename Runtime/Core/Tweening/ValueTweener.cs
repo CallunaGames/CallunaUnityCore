@@ -12,14 +12,20 @@ namespace Calluna
     /// </summary>
     public abstract class ValueTweener<TValue> : IDisposable
     {
-        private readonly CoroutineHelper _coroutineHelper;
-        private readonly string _id = Guid.NewGuid().ToString();
+        private readonly CoroutineSlot _slot;
 
         public bool IsTweening { get; private set; }
 
+        /// <summary>
+        /// Whether tweens advance with <see cref="Time.unscaledDeltaTime"/> - e.g. to keep UI animating
+        /// while the game is paused via <see cref="Time.timeScale"/> - instead of
+        /// <see cref="Time.deltaTime"/> (default). Also applies to a tween already running.
+        /// </summary>
+        public bool UseUnscaledTime { get; set; }
+
         protected ValueTweener(CoroutineHelper coroutineHelper)
         {
-            _coroutineHelper = coroutineHelper;
+            _slot = new CoroutineSlot(coroutineHelper);
         }
 
         /// <summary>
@@ -38,7 +44,7 @@ namespace Calluna
                 updateAction(end);
                 return;
             }
-            _coroutineHelper.ReplaceWithID(DoTween(start, end, duration, tweenType, updateAction), _id);
+            _slot.Run(DoTween(start, end, duration, tweenType, updateAction));
         }
 
         /// <summary>
@@ -56,7 +62,7 @@ namespace Calluna
 
         public void Stop()
         {
-            _coroutineHelper.StopWithID(_id);
+            _slot.Stop();
             IsTweening = false;
         }
 
@@ -74,7 +80,7 @@ namespace Calluna
             {
                 // Clamp elapsed to duration so the normalised t never exceeds 1,
                 // preventing floating-point accumulation from overshooting the end value.
-                elapsed = Mathf.Min(elapsed + Time.deltaTime, duration);
+                elapsed = Mathf.Min(elapsed + (UseUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime), duration);
                 updateAction(CalculateNewValue(ease(elapsed * invDuration), start, end));
                 // Update before breaking so the callback always receives the final t=1 value.
                 if (elapsed >= duration) break;

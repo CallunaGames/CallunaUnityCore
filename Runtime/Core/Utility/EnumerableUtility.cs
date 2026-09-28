@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 
 namespace Calluna
 {
+    [Obsolete("Iterating an IEnumerable<T> allocates an enumerator for most collections, so these helpers don't avoid allocations. Loop over the concrete collection instead. Will be removed in 2.0.0.")]
     public static class EnumerableUtility
     {
         public static int Sum(IEnumerable<int> values)
