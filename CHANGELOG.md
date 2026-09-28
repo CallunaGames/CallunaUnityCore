@@ -1,3 +1,18 @@
+## [1.7.0-pre.4] - 2026-09-28
+
+### Added
+- `ObservableList<T>.Subscribe(added:, removed:, replaced:, swapped:, reset:)` (also on `ReadonlyObservableList<T>`) — one subscription with handlers for the kinds of changes passed by name. Without a `reset` handler, a reset (`Clear`, `OverrideWith`) is delivered as the removal of every former item followed by the addition of every current item, so leaving out a handler can't make a subscriber miss items. Returns an `IDisposable`.
+- `ObservableList<T>.SubscribeAny(Action)` — once per change of any kind; replaces `ObservableListChangeDetector`.
+- `ObservableList<T>.Subscribe(Action<ListChange<T>>)` — every change as a `ListChange<T>` value (`Kind`, `Index`, `Item`, `FormerItem`, `OtherIndex`, `OtherItem`); a reset arrives as one `ListChangeKind.Reset`.
+- `ItemHandler<T>`, `ReplaceHandler<T>`, `SwapHandler<T>` — delegate types of the handlers.
+
+### Changed
+- `ReadonlyObservableList<T>` — new members `Subscribe(...)`, `Subscribe(Action<ListChange<T>>)` and `SubscribeAny`. Only affects classes implementing the interface outside this package.
+- `ObservableListChangeDetector` — now built on `SubscribeAny`; behavior unchanged.
+
+### Deprecated
+- `ObservableList<T>` / `ReadonlyObservableList<T>` events `OnItemAdded`, `OnItemRemoved`, `OnItemReplaced`, `OnItemsSwapped`, `OnClean`, `OnContentsReplaced`, the delegate types `ItemChangeEvent`, `ItemReplaceEvent`, `ItemSwapEvent`, and `ObservableListChangeDetector` — a subscriber had to handle all six events to not miss changes. Use `Subscribe` / `SubscribeAny`.
+
 ## [1.7.0-pre.3] - 2026-09-28
 
 ### Added

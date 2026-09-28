@@ -106,17 +106,18 @@ In the editor, **Calluna > Diagnostics > Log Unchanged Observable Values** logs 
 ---
 
 ## Observable Collections
-`ObservableList<TValue>` is a list that fires events when items are added, removed, replaced, or swapped.
+`ObservableList<TValue>` is a list that notifies subscribers when items are added, removed, replaced or swapped, or its whole content changes at once (a reset: `Clear`, `OverrideWith`).
 Use `ReadonlyObservableList<TValue>` to expose the list without allowing external mutation.
 
 ```c#
 class ObservableList<TValue> : IList<TValue>, ReadonlyObservableList<TValue>
 interface ReadonlyObservableList<TValue> : IReadOnlyList<TValue>
-class ObservableListChangeDetector<TValue> : IDisposable
+readonly struct ListChange<T>
+enum ListChangeKind { Added, Removed, Replaced, Swapped, Reset }
 
-delegate void ItemChangeEvent<TValue>(TValue item, int index)
-delegate void ItemReplaceEvent<TValue>(TValue newItem, TValue formerItem, int index)
-delegate void ItemSwapEvent<TValue>(TValue newIndex1Item, int index1, TValue newIndex2Item, int index2)
+delegate void ItemHandler<TValue>(TValue item, int index)
+delegate void ReplaceHandler<TValue>(TValue newItem, TValue formerItem, int index)
+delegate void SwapHandler<TValue>(TValue newIndex1Item, int index1, TValue newIndex2Item, int index2)
 ```
 
 ### Usage
@@ -132,7 +133,7 @@ public ReadonlyObservableList<TValue> List => _list;
 #### Add / Insert / Remove / Clear
 ```c#
 _list.Add(item);
-_list.Insert(index, item); // inserts at index; fires OnItemAdded
+_list.Insert(index, item); // inserts at index; notifies as added
 _list.Remove(item);        // returns bool
 _list.RemoveAt(index);
 _list.Clear();
@@ -140,7 +141,7 @@ _list.Clear();
 
 #### Replace Item at Index
 ```c#
-_list[index] = newItem;   // fires OnItemReplaced
+_list[index] = newItem;   // notifies as replaced
 ```
 
 #### Swap Two Items
@@ -150,36 +151,48 @@ _list.Swap(indexA, indexB);
 
 #### Override Contents (bulk)
 ```c#
-// Replaces all contents in-place to match the new sequence.
-// No per-item events are fired; OnContentsReplaced is raised once when done.
+// Replaces all contents in-place to match the new sequence - notifies as one reset.
 _list.OverrideWith(newItems);
 ```
 
 #### Override Contents (per-item events)
 ```c#
-// Diff-and-patch update: fires OnItemsSwapped, OnItemReplaced, OnItemAdded, and
-// OnItemRemoved for each individual change. OnContentsReplaced is NOT fired.
-// Use this when listeners need to react to each slot change rather than a bulk reset.
+// Diff-and-patch update: notifies each swap, replacement, addition and removal on its own -
+// no reset. Use this when subscribers need to react to each slot change rather than a bulk reset.
 _list.OverrideWithEvents(newItems);
 ```
 
-#### Listen to Events
+#### Subscribe to Changes
+Pass the handlers you need by name. Each Subscribe returns an `IDisposable` that ends the notifications - e.g. collected in a `SubscriptionBag`.
 ```c#
-_list.OnItemAdded += (TValue item, int index) => { };
-_list.OnItemRemoved += (TValue item, int index) => { };
-_list.OnItemReplaced += (TValue newItem, TValue formerItem, int index) => { };
-_list.OnItemsSwapped += (TValue newAt0, int index0, TValue newAt1, int index1) => { };
-_list.OnClean += () => { };             // fires once when Clear() is called; OnItemRemoved is NOT fired per element
-_list.OnContentsReplaced += () => { };  // fires once when OverrideWith() completes; NOT fired by OverrideWithEvents()
+_subscriptions.Add(_list.Subscribe(added: OnAdded));
+
+_subscriptions.Add(_list.Subscribe(
+    added: (TValue item, int index) => { },
+    removed: (TValue item, int index) => { },
+    replaced: (TValue newItem, TValue formerItem, int index) => { },
+    swapped: (TValue newAt0, int index0, TValue newAt1, int index1) => { },
+    reset: () => { }));
+```
+Without a `reset` handler, a reset is delivered as the removal of every former item (last to first) followed by the addition of every current item. So a subscriber that only passes `added` still sees the items `OverrideWith` adds - no change can be missed by leaving a handler out. When those handlers run, the list already holds its new contents. Pass `reset` to rebuild once instead.
+
+#### React to Any Change
+```c#
+_subscriptions.Add(_list.SubscribeAny(Rebuild)); // once per change, once per reset
 ```
 
-#### Detect Any Change with ObservableListChangeDetector
-`ObservableListChangeDetector` routes all four item events, `OnClean`, and `OnContentsReplaced` into a single `OnChanged` event, so you can react to any mutation — including `Clear()`, `OverrideWith()`, and `OverrideWithEvents()` — from one subscription.
+#### Receive Every Change as a Value
+For special cases, e.g. forwarding changes, one handler receives every change as a `ListChange<T>`; a reset arrives as a single `ListChangeKind.Reset` change.
 ```c#
-using var detector = new ObservableListChangeDetector<TValue>(_list);
-detector.OnChanged += () => { Debug.Log("List changed"); };
-// detector.Dispose() unsubscribes all listeners
+_subscriptions.Add(_list.Subscribe((ListChange<TValue> change) =>
+{
+    if (change.Kind == ListChangeKind.Replaced)
+        Debug.Log($"{change.FormerItem} -> {change.Item} at {change.Index}");
+}));
 ```
+
+#### Obsolete: Events and ObservableListChangeDetector
+The events `OnItemAdded`, `OnItemRemoved`, `OnItemReplaced`, `OnItemsSwapped`, `OnClean` and `OnContentsReplaced`, their delegate types (`ItemChangeEvent`, `ItemReplaceEvent`, `ItemSwapEvent`) and `ObservableListChangeDetector` are obsolete and will be removed in 2.0.0. A subscriber had to handle all six events to not miss changes; use `Subscribe` and `SubscribeAny` instead.
 
 ---
 

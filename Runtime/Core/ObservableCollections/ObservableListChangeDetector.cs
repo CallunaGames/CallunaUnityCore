@@ -2,39 +2,20 @@ using System;
 
 namespace Calluna
 {
+    [Obsolete("Use ObservableList.SubscribeAny, which returns a subscription to dispose. Will be removed in 2.0.0.")]
     public class ObservableListChangeDetector<TValue> : IDisposable
     {
         public event Action OnChanged;
-        
-        private readonly ReadonlyObservableList<TValue> _list;
-        
+
+        private readonly IDisposable _subscription;
+
         public ObservableListChangeDetector(ReadonlyObservableList<TValue> list)
         {
-            _list = list;
-            _list.OnItemAdded += OnItemChanged;
-            _list.OnItemRemoved += OnItemChanged;
-            _list.OnItemReplaced += OnItemReplaced;
-            _list.OnItemsSwapped += OnItemsSwapped;
-            _list.OnClean += RaiseOnChanged;
-            _list.OnContentsReplaced += RaiseOnChanged;
+            _subscription = list.SubscribeAny(RaiseOnChanged);
         }
 
-        public void Dispose()
-        {
-            _list.OnItemAdded -= OnItemChanged;
-            _list.OnItemRemoved -= OnItemChanged;
-            _list.OnItemReplaced -= OnItemReplaced;
-            _list.OnItemsSwapped -= OnItemsSwapped;
-            _list.OnClean -= RaiseOnChanged;
-            _list.OnContentsReplaced -= RaiseOnChanged;
-        }
+        public void Dispose() => _subscription.Dispose();
 
         private void RaiseOnChanged() => OnChanged?.Invoke();
-
-        private void OnItemChanged(TValue item, int index) => OnChanged?.Invoke();
-
-        private void OnItemReplaced(TValue nextItem, TValue formerItem, int index) => OnChanged?.Invoke();
-
-        private void OnItemsSwapped(TValue newIndex1Item, int index1, TValue newIndex2Item, int index2) => OnChanged?.Invoke();
     }
 }
