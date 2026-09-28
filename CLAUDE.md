@@ -21,7 +21,8 @@ All runtime code lives under the `Calluna` namespace. The single runtime assembl
 ### Key Patterns
 
 **Observable / ReadonlyObservable**
-- `Observable<T>` wraps a value and fires `OnChanged` (no args) or `OnChangedWithValues(former, new)` on mutation.
+- `Observable<T>` wraps a value and fires `OnChanged` (no args) or `OnChangedWithValues(former, new)` when the value actually changes (`EqualityComparer<T>.Default`; Unity objects by reference). Setting the current value again doesn't notify.
+- Editor-only `ObservableDiagnostics` (menu Calluna > Diagnostics) logs call sites that set an unchanged value while listeners are subscribed.
 - Expose as `ReadonlyObservable<T>` to prevent external writes.
 - Implicit operators allow `Observable<int> x = 5;` and `int y = x;`.
 - Use `SetValueWithoutNotify()` for silent updates.
@@ -37,8 +38,8 @@ All runtime code lives under the `Calluna` namespace. The single runtime assembl
 - Custom delegates are defined in `ObservableCollectionDelegates.cs`.
 
 **CoroutineHelper / Timer**
-- `CoroutineHelper` (MonoBehaviour) wraps Unity coroutines with string IDs to prevent duplicates and allow replacement.
-- `Timer` uses `CoroutineHelper` internally, implements `IDisposable`, tracks `Progress` (0–1) and `Elapsed` time, and fires `OnDone`.
+- `CoroutineHelper` (MonoBehaviour) runs coroutines for plain C# classes: `Run` returns a `CoroutineHandle`; `CoroutineSlot` keeps one routine of a kind running. The string-ID methods are obsolete (removal in 2.0.0).
+- `Timer` uses a `CoroutineSlot` internally, implements `IDisposable`, tracks `Progress` (0–1) and `Elapsed` time, and fires `OnDone`.
 
 **EnumerableUtility**
 - Static utility class under `Runtime/Core/Utility/`.
@@ -58,7 +59,7 @@ Runtime/Core/          # Production source, organized by feature
 Editor/                # Editor-only tools (PackageSamplesTestsToggler)
 Tests~/                # NUnit tests (hidden from Package Manager by default)
 Samples~/              # Sample MonoBehaviours per feature (hidden by default)
-package.json           # UPM metadata (v1.1.0, Unity 6000.33)
+package.json           # UPM metadata (minimum Unity 6000.0.33f1)
 ```
 
 ## Conventions

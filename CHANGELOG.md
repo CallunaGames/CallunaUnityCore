@@ -1,3 +1,58 @@
+## [1.7.0] - 2026-09-28
+
+Transition release: new APIs for subscriptions, coroutines, accumulating values, observable lists and typed ids. The APIs they replace still work but are marked `[Obsolete]` and will be removed in 2.0.0, so projects can migrate step by step - uses of them show CS0618 warnings naming the replacement. Also contains fixes and one behavior change of `Observable<T>` (see Changed).
+
+### Added
+- **Subscriptions**
+  - `Subscription` and `SubscriptionBag` — an `IDisposable` ending a subscription, and a collection ending all added subscriptions (any `IDisposable`) on `Dispose`, in reverse order. A subscription throwing while being disposed is logged and doesn't stop the others.
+  - `Observable<T>.Subscribe(Action)` and `Subscribe(Action<T, T>)` (also on `ReadonlyObservable<T>`) — return a subscription that removes the callback when disposed.
+  - `ObservableList<T>.Subscribe(added:, removed:, replaced:, swapped:, reset:)` (also on `ReadonlyObservableList<T>`) — one subscription with handlers for the kinds of changes passed by name. Without a `reset` handler, a reset (`Clear`, `OverrideWith`) is delivered as the removal of every former item followed by the addition of every current item, so leaving out a handler can't make a subscriber miss items.
+  - `ObservableList<T>.SubscribeAny(Action)` — once per change of any kind.
+  - `ObservableList<T>.Subscribe(Action<ListChange<T>>)` — every change as a `ListChange<T>` value (`Kind`, `Index`, `Item`, `FormerItem`, `OtherIndex`, `OtherItem`); a reset arrives as one `ListChangeKind.Reset`.
+  - `ItemHandler<T>`, `ReplaceHandler<T>`, `SwapHandler<T>` — delegate types of the list handlers.
+- **Observables**
+  - `Observable<T>(T value)` constructor.
+  - `ObservableDiagnostics` (editor only) and the menu **Calluna > Diagnostics > Log Unchanged Observable Values** — logs each call site that sets an observable to its current value while listeners are subscribed, once per play session, with the listeners that are no longer called. Helps find code relying on the former notify-on-every-set behavior.
+- **Coroutines**
+  - `CoroutineHelper.Run(IEnumerator)` returning a `CoroutineHandle` (`IsRunning`, `Stop()`, yieldable inside coroutines). The handle reports the routine as ended when it completes, throws (the exception is still logged), is stopped, or the helper is destroyed.
+  - `CoroutineSlot` — runs at most one routine at a time on a `CoroutineHelper`; running a new one stops the former.
+- **Accumulating values**
+  - `AccumulatingValue<T>.AddPart()` and `AddPart(T)` returning an `AccumulatingValuePart<T>` — set its `Value` to contribute, `Clear()` to withdraw the contribution (the part stays usable, `IsSet` tells whether it contributes), `Dispose()` to remove it for good. A cleared part counts as if it didn't exist, in every mode.
+  - `KeyedAccumulatingParts<TKey, T>` — one part per key, for contributors identified by data (requester names, ids authored in assets, pooled views) rather than objects keeping their own part. `Set`, `Clear`, `ClearAll`, `TryGet`; disposing removes all parts.
+- **Scheduling and tweening**
+  - `UpdateScheduler.ScheduleOnce(Action, SchedulePhase)` and `Cancel(Action)` — deduplicate by the callback itself instead of a string id.
+  - `ValueTweener<T>.UseUnscaledTime` — advance tweens with `Time.unscaledDeltaTime` (default stays `Time.deltaTime`).
+- **Ids**
+  - `Id<TDefinition>` — a value-type key compared by its string (ordinal), typed by the definition it identifies; usable without loading assets, e.g. in tests or as dictionary keys.
+  - `ScriptableObjectId<TSelf>` — `ScriptableObjectId` exposing its id as `Key` (`Id<TSelf>`). Existing classes can switch to it without losing their serialized ids.
+  - `ScriptableObjectIdValidation.FindProblems` and, in the editor, `ScriptableObjectIdValidator.FindProblems()` plus the menu **Calluna > Diagnostics > Validate ScriptableObject Ids** — report empty ids and ids used several times within a type; call it from an edit mode test to guard a project.
+
+### Changed
+- `Observable<T>` — **behavior change:** setting a value equal to the current one (per `EqualityComparer<T>.Default`) no longer notifies `OnChanged` / `OnChangedWithValues`. Unity objects are compared by reference, so a change from a destroyed object to `null` still notifies. Code that mutates a held array/list/object and sets the same instance again to trigger listeners must assign a new instance; code sending commands through an observable should use an event or a direct call instead.
+- `EventBus` — a listener throwing an exception no longer stops the remaining listeners of that event, nor leaves queued events waiting for the next `Publish`; the exception is logged via `Debug.LogException` instead of propagating to the publisher. Listeners are stored per event type in an array replaced on (un)subscribe, so `Publish` stays allocation-free; listeners subscribed or unsubscribed during dispatch take effect from the next delivered event on.
+- `IEventBus.Subscribe` / `EventBus.Subscribe` — return a subscription (`IDisposable`) that unsubscribes the listener when disposed; subscribing `null` throws `ArgumentNullException`. Source-compatible for callers.
+- `ReadonlyObservable<T>` and `ReadonlyObservableList<T>` — new subscribe members (see Added). Only affects classes implementing these interfaces outside this package.
+- `AccumulatingValue<T>` — `Value` now starts at the mode's neutral value, the same value it returns to once all parts are removed: `AccumulatingBoolValue` `All` starts `true` (was `false`), `AccumulatingFloatValue` `Multiply` starts `1` (was `0`). Recalculation no longer allocates an enumerator.
+- `Timer` and `ValueTweener<T>` — run on a `CoroutineSlot` instead of a generated string id; passing a `null` `CoroutineHelper` now throws on construction instead of on first use.
+- `ObservableListChangeDetector` — built on `SubscribeAny`; behavior unchanged.
+- `Calluna.Core.Editor` — now references `Calluna.Core`.
+- `package.json` — minimum Unity version corrected to `6000.0.33f1` (`"unity": "6000.0"`, `"unityRelease": "33f1"`); it read `6000.33`, a version that doesn't exist.
+
+### Deprecated (removal in 2.0.0)
+- The implicit conversion from `T` to `Observable<T>` — use `new Observable<T>(value)`. Assigning a value to an observable field that way replaced the observable and dropped its listeners. The conversion from `Observable<T>` to `T` stays.
+- `CoroutineHelper.StartWithID`, `ReplaceWithID`, `StopWithID`, `HasRoutineWith` — use `Run` / `CoroutineHandle` / `CoroutineSlot`.
+- `AccumulatingValue<T>.Add`, `Set`, `Remove`, `TryGetValuePart` and the string indexer — use `AddPart`, or `KeyedAccumulatingParts` for data keys.
+- `UpdateScheduler.ScheduleOnce(string, Action, SchedulePhase)` and `Cancel(string)` — use the overloads taking the callback.
+- `ObservableList<T>` / `ReadonlyObservableList<T>` events `OnItemAdded`, `OnItemRemoved`, `OnItemReplaced`, `OnItemsSwapped`, `OnClean`, `OnContentsReplaced`, the delegate types `ItemChangeEvent`, `ItemReplaceEvent`, `ItemSwapEvent`, and `ObservableListChangeDetector` — a subscriber had to handle all six events to not miss changes; use `Subscribe` / `SubscribeAny`.
+- `EnumerableUtility` — iterating an `IEnumerable<T>` allocates an enumerator for most collections, so it doesn't avoid allocations as intended.
+
+### Breaking Changes
+- `AccumulatingValue<T>.CalculateValue` — the protected abstract method now takes `IReadOnlyList<T>` instead of `IEnumerable<T>`. Only affects classes deriving from `AccumulatingValue<T>` outside this package; subclasses call the new protected `Recalculate()` at the end of their constructor to set their initial value.
+
+### Fixed
+- `ValueTweener<T>.Perform` — with a duration of zero or less, a tween already running on the same tweener is now stopped. Before, it kept running and overwrote the value just set.
+- `CoroutineHelper` — destroying it now also forgets its routines, so `HasRoutineWith` no longer reports stopped routines as running.
+
 ## [1.6.1] - 2026-06-02
 
 ### Added

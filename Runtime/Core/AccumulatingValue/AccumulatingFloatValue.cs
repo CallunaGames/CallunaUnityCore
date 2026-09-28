@@ -7,19 +7,30 @@ namespace Calluna
     {
         private readonly Mode _mode;
 
+        /// <summary>Without parts, <see cref="Mode.Sum"/> is 0 and <see cref="Mode.Multiply"/> is 1.</summary>
         public AccumulatingFloatValue(Mode mode = Mode.Sum)
         {
             _mode = mode;
+            Recalculate();
         }
 
-        protected override float CalculateValue(IEnumerable<float> values)
+        protected override float CalculateValue(IReadOnlyList<float> values)
         {
-            return _mode switch
+            switch (_mode)
             {
-                Mode.Sum      => EnumerableUtility.Sum(values),
-                Mode.Multiply => EnumerableUtility.Product(values),
-                _ => throw new ArgumentOutOfRangeException()
-            };
+                case Mode.Sum:
+                    float sum = 0f;
+                    for (int i = 0; i < values.Count; i++)
+                        sum += values[i];
+                    return sum;
+                case Mode.Multiply:
+                    float product = 1f;
+                    for (int i = 0; i < values.Count; i++)
+                        product *= values[i];
+                    return product;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public enum Mode

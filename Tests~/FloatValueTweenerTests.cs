@@ -118,6 +118,22 @@ namespace Calluna.Core.Tests
             Assert.IsFalse(tweener.IsTweening);
         }
 
+        [UnityTest]
+        [Description("Zero-duration Perform while a tween runs => running tween stops and can't overwrite the value?")]
+        public IEnumerator FloatValueTweener_Perform_ZeroDurationWhileTweening_StopsRunningTween()
+        {
+            var tweener = new FloatValueTweener(_coroutineHelper);
+            float received = -1f;
+            tweener.Perform(0f, 10f, 5f, TweenType.Linear, v => received = v);
+
+            tweener.Perform(0f, 3f, 0f, TweenType.Linear, v => received = v);
+            yield return null;
+            yield return null;
+
+            Assert.AreEqual(3f, received, 0.0001f);
+            Assert.IsFalse(tweener.IsTweening);
+        }
+
         // ── PerformAndWait ───────────────────────────────────────────────────────
 
         [Test]
@@ -145,6 +161,57 @@ namespace Calluna.Core.Tests
 
             Assert.AreEqual(10f, received, 0.0001f);
             Assert.IsFalse(tweener.IsTweening);
+        }
+
+        // ── Time scale ───────────────────────────────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator FloatValueTweener_TimeScaleZero_ScaledTween_DoesNotAdvance()
+        {
+            float formerTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+            try
+            {
+                // Perform steps right away with this frame's deltaTime, from before the time scale changed.
+                yield return null;
+                var tweener = new FloatValueTweener(_coroutineHelper);
+                float received = -1f;
+                tweener.Perform(0f, 10f, 10f, TweenType.Linear, v => received = v);
+
+                yield return null;
+                yield return null;
+
+                Assert.AreEqual(0f, received, 0.0001f);
+            }
+            finally
+            {
+                Time.timeScale = formerTimeScale;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator FloatValueTweener_TimeScaleZero_UnscaledTween_Advances()
+        {
+            float formerTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+            try
+            {
+                // Perform steps right away with this frame's deltaTime, from before the time scale changed.
+                yield return null;
+                var tweener = new FloatValueTweener(_coroutineHelper) { UseUnscaledTime = true };
+                float received = -1f;
+                tweener.Perform(0f, 10f, 10f, TweenType.Linear, v => received = v);
+
+                yield return null;
+                yield return null;
+
+                Assert.Greater(received, 0f);
+                Assert.IsTrue(tweener.IsTweening);
+            }
+            finally
+            {
+                Time.timeScale = formerTimeScale;
+            }
         }
     }
 }

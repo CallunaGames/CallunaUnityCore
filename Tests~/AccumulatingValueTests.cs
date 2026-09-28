@@ -1,6 +1,9 @@
 using System;
 using NUnit.Framework;
 
+// Also covers the obsolete string-id APIs until their removal in 2.0.0.
+#pragma warning disable CS0618
+
 namespace Calluna.Core.Tests
 {
     public class AccumulatingValueTests
@@ -135,7 +138,6 @@ namespace Calluna.Core.Tests
         [Test, Description("Add entry => Value observable fires OnChanged?")]
         [TestCase(1)]
         [TestCase(-100)]
-        [TestCase(0)]
         public void AccumulatingIntValue_Add_ObservableOnChangedFired(int value)
         {
             var acc = new AccumulatingIntValue();
@@ -145,6 +147,18 @@ namespace Calluna.Core.Tests
             acc.Add("a", value);
             acc.Value.OnChanged -= listener;
             Assert.IsTrue(fired);
+        }
+
+        [Test, Description("Add entry that doesn't change the result => No OnChanged?")]
+        public void AccumulatingIntValue_Add_ZeroPart_DoesNotFireOnChanged()
+        {
+            var acc = new AccumulatingIntValue();
+            bool fired = false;
+            acc.Value.OnChanged += () => fired = true;
+
+            acc.Add("a", 0);
+
+            Assert.IsFalse(fired);
         }
 
         // --- AccumulatingFloatValue ---
@@ -463,6 +477,208 @@ namespace Calluna.Core.Tests
             acc.Add("a", true);
             acc.Value.OnChanged -= listener;
             Assert.IsTrue(fired);
+        }
+
+        // --- Value without parts ---
+
+        [Test, Description("No parts => Value matches the mode's neutral value?")]
+        public void AccumulatingValue_WithoutParts_HasNeutralValue()
+        {
+            Assert.AreEqual(0, new AccumulatingIntValue().Value.Value);
+            Assert.AreEqual(0f, new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Sum).Value.Value);
+            Assert.AreEqual(1f, new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply).Value.Value);
+            Assert.IsFalse(new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any).Value.Value);
+            Assert.IsTrue(new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All).Value.Value);
+        }
+
+        [Test, Description("All parts removed again => Value equals the value it started with?")]
+        public void AccumulatingValue_AllPartsRemoved_ReturnsToInitialValue()
+        {
+            var all = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
+            bool allInitial = all.Value.Value;
+            all.Add("a", false);
+            all.Remove("a");
+
+            var product = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply);
+            float productInitial = product.Value.Value;
+            product.Add("a", 5f);
+            product.Remove("a");
+
+            Assert.AreEqual(allInitial, all.Value.Value);
+            Assert.AreEqual(productInitial, product.Value.Value);
+        }
+
+        // --- Parts ---
+
+        [Test, Description("AddPart => Value includes the part?")]
+        public void AccumulatingValue_AddPart_IncludedInValue()
+        {
+            var acc = new AccumulatingIntValue();
+            acc.AddPart(3);
+            acc.AddPart(4);
+            Assert.AreEqual(7, acc.Value.Value);
+        }
+
+        [Test, Description("Part value set => Value recalculated?")]
+        public void AccumulatingValue_PartValueSet_Recalculates()
+        {
+            var acc = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply);
+            AccumulatingValuePart<float> part = acc.AddPart(2f);
+            acc.AddPart(3f);
+
+            part.Value = 5f;
+
+            Assert.AreEqual(15f, acc.Value.Value, 0.0001f);
+            Assert.AreEqual(5f, part.Value, 0.0001f);
+        }
+
+        [Test, Description("Part disposed => Removed from value, disposing again does nothing?")]
+        public void AccumulatingValue_PartDisposed_RemovedOnce()
+        {
+            var acc = new AccumulatingIntValue();
+            AccumulatingValuePart<int> part = acc.AddPart(3);
+            acc.AddPart(4);
+
+            part.Dispose();
+            part.Dispose();
+
+            Assert.AreEqual(4, acc.Value.Value);
+            Assert.IsTrue(part.IsDisposed);
+        }
+
+        [Test, Description("Disposed part value set => Throws ObjectDisposedException?")]
+        public void AccumulatingValue_DisposedPartValueSet_Throws()
+        {
+            var acc = new AccumulatingIntValue();
+            AccumulatingValuePart<int> part = acc.AddPart(3);
+            part.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => part.Value = 5);
+            Assert.AreEqual(0, acc.Value.Value);
+        }
+
+        [Test, Description("Two parts with equal values, one disposed => Other still counted?")]
+        public void AccumulatingValue_EqualParts_DisposeOne_OtherStillCounted()
+        {
+            var acc = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+            AccumulatingValuePart<bool> first = acc.AddPart(true);
+            acc.AddPart(true);
+
+            first.Dispose();
+
+            Assert.IsTrue(acc.Value.Value);
+        }
+
+        [Test, Description("Parts and string-id parts => Both included?")]
+        public void AccumulatingValue_PartsAndStringIds_BothIncluded()
+        {
+            var acc = new AccumulatingIntValue();
+            acc.AddPart(3);
+            acc.Add("a", 4);
+            Assert.AreEqual(7, acc.Value.Value);
+        }
+
+        [Test, Description("AddPart without value => Doesn't contribute until set?")]
+        public void AccumulatingValue_AddPartWithoutValue_ContributesOnceSet()
+        {
+            var all = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
+            AccumulatingValuePart<bool> part = all.AddPart();
+
+            Assert.IsFalse(part.IsSet);
+            Assert.IsTrue(all.Value.Value, "An unset part must not block Mode.All.");
+
+            part.Value = false;
+
+            Assert.IsTrue(part.IsSet);
+            Assert.IsFalse(all.Value.Value);
+        }
+
+        [Test, Description("AddPart without value => Doesn't notify listeners?")]
+        public void AccumulatingValue_AddPartWithoutValue_DoesNotNotify()
+        {
+            var acc = new AccumulatingIntValue();
+            int calls = 0;
+            acc.Value.OnChanged += () => calls++;
+
+            acc.AddPart();
+
+            Assert.AreEqual(0, calls);
+        }
+
+        [Test, Description("Part cleared => Withdrawn, like removing it, in every mode?")]
+        public void AccumulatingValue_PartCleared_EqualsValueWithoutPart()
+        {
+            var any = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+            var all = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
+            var sum = new AccumulatingIntValue();
+            var product = new AccumulatingFloatValue(AccumulatingFloatValue.Mode.Multiply);
+            AccumulatingValuePart<bool> anyPart = any.AddPart(true);
+            AccumulatingValuePart<bool> allPart = all.AddPart(false);
+            AccumulatingValuePart<int> sumPart = sum.AddPart(5);
+            AccumulatingValuePart<float> productPart = product.AddPart(3f);
+
+            anyPart.Clear();
+            allPart.Clear();
+            sumPart.Clear();
+            productPart.Clear();
+
+            Assert.IsFalse(any.Value.Value);
+            Assert.IsTrue(all.Value.Value);
+            Assert.AreEqual(0, sum.Value.Value);
+            Assert.AreEqual(1f, product.Value.Value, 0.0001f);
+            Assert.IsFalse(anyPart.IsSet);
+            Assert.AreEqual(0, sumPart.Value);
+        }
+
+        [Test, Description("Cleared part set again => Contributes again?")]
+        public void AccumulatingValue_ClearedPartSetAgain_Contributes()
+        {
+            var acc = new AccumulatingIntValue();
+            AccumulatingValuePart<int> part = acc.AddPart(3);
+            part.Clear();
+
+            part.Value = 4;
+
+            Assert.AreEqual(4, acc.Value.Value);
+        }
+
+        [Test, Description("Unset or disposed part cleared => Nothing happens?")]
+        public void AccumulatingValue_ClearUnsetOrDisposedPart_DoesNothing()
+        {
+            var acc = new AccumulatingIntValue();
+            AccumulatingValuePart<int> unset = acc.AddPart();
+            AccumulatingValuePart<int> disposed = acc.AddPart(3);
+            disposed.Dispose();
+            int calls = 0;
+            acc.Value.OnChanged += () => calls++;
+
+            Assert.DoesNotThrow(unset.Clear);
+            Assert.DoesNotThrow(disposed.Clear);
+            Assert.AreEqual(0, calls);
+        }
+
+        [Test, Description("Unset part disposed => Value unchanged?")]
+        public void AccumulatingValue_UnsetPartDisposed_ValueUnchanged()
+        {
+            var acc = new AccumulatingIntValue();
+            acc.AddPart(2);
+            AccumulatingValuePart<int> unset = acc.AddPart();
+
+            unset.Dispose();
+
+            Assert.AreEqual(2, acc.Value.Value);
+        }
+
+        [Test, Description("All parts disposed => Back to neutral value?")]
+        public void AccumulatingValue_AllPartsDisposed_ReturnsToNeutralValue()
+        {
+            var all = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
+            AccumulatingValuePart<bool> part = all.AddPart(false);
+            Assert.IsFalse(all.Value.Value);
+
+            part.Dispose();
+
+            Assert.IsTrue(all.Value.Value);
         }
     }
 }

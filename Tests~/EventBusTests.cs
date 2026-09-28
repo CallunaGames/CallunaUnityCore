@@ -1,5 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Calluna.Core.Tests
 {
@@ -134,6 +138,89 @@ namespace Calluna.Core.Tests
             Assert.AreEqual(new List<string> { "A", "B", "C" }, received);
         }
 
+        // ── Exceptions ───────────────────────────────────────────────────────────
+
+        [Test]
+        public void EventBus_Publish_ThrowingListener_OtherListenersStillCalled()
+        {
+            var order = new List<string>();
+            _bus.Subscribe<EventA>(_ => order.Add("before"));
+            _bus.Subscribe<EventA>(_ => throw new InvalidOperationException("listener failed"));
+            _bus.Subscribe<EventA>(_ => order.Add("after"));
+            LogAssert.Expect(LogType.Exception, new Regex("listener failed"));
+
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(new List<string> { "before", "after" }, order);
+        }
+
+        [Test]
+        public void EventBus_Publish_ThrowingListener_QueuedEventsDeliveredInSamePublish()
+        {
+            bool bReceived = false;
+            _bus.Subscribe<EventA>(_ =>
+            {
+                _bus.Publish(new EventB());
+                throw new InvalidOperationException("listener failed");
+            });
+            _bus.Subscribe<EventB>(_ => bReceived = true);
+            LogAssert.Expect(LogType.Exception, new Regex("listener failed"));
+
+            _bus.Publish(new EventA());
+
+            Assert.IsTrue(bReceived, "An event queued before the exception must not wait for the next publish");
+        }
+
+        // ── Listener changes during dispatch ─────────────────────────────────────
+
+        [Test]
+        public void EventBus_Subscribe_DuringDispatch_CalledFromNextEventOn()
+        {
+            int lateCallCount = 0;
+            bool lateSubscribed = false;
+            void Late(EventA _) => lateCallCount++;
+            _bus.Subscribe<EventA>(_ =>
+            {
+                if (lateSubscribed) return;
+                lateSubscribed = true;
+                _bus.Subscribe<EventA>(Late);
+            });
+
+            _bus.Publish(new EventA());
+            Assert.AreEqual(0, lateCallCount, "Must not receive the event it was subscribed during");
+
+            _bus.Publish(new EventA());
+            Assert.AreEqual(1, lateCallCount);
+        }
+
+        [Test]
+        public void EventBus_Unsubscribe_DuringDispatch_StillReceivesCurrentEvent()
+        {
+            int callCount = 0;
+            void Removed(EventA _) => callCount++;
+            _bus.Subscribe<EventA>(_ => _bus.Unsubscribe<EventA>(Removed));
+            _bus.Subscribe<EventA>(Removed);
+
+            _bus.Publish(new EventA());
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(1, callCount);
+        }
+
+        [Test]
+        public void EventBus_Unsubscribe_HandlerSubscribedTwice_RemovesOneRegistration()
+        {
+            int callCount = 0;
+            void Handler(EventA _) => callCount++;
+            _bus.Subscribe<EventA>(Handler);
+            _bus.Subscribe<EventA>(Handler);
+
+            _bus.Unsubscribe<EventA>(Handler);
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(1, callCount);
+        }
+
         // ── Payload integrity ────────────────────────────────────────────────────
 
         [Test]
@@ -158,6 +245,57 @@ namespace Calluna.Core.Tests
             _bus.Publish(published);
 
             Assert.AreSame(published, received);
+        }
+
+        // ── Subscribe returning a subscription ───────────────────────────────────
+
+        [Test]
+        public void EventBus_SubscriptionDisposed_ListenerNoLongerCalled()
+        {
+            int calls = 0;
+            IDisposable subscription = _bus.Subscribe<EventA>(_ => calls++);
+
+            _bus.Publish(new EventA());
+            subscription.Dispose();
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test]
+        public void EventBus_SubscriptionDisposedTwice_RemovesOnlyOneRegistration()
+        {
+            int calls = 0;
+            Action<EventA> listener = _ => calls++;
+            IDisposable first = _bus.Subscribe(listener);
+            _bus.Subscribe(listener);
+
+            first.Dispose();
+            first.Dispose();
+            _bus.Publish(new EventA());
+
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test]
+        public void EventBus_SubscriptionsInBag_AllRemovedOnDispose()
+        {
+            int calls = 0;
+            SubscriptionBag bag = new SubscriptionBag();
+            bag.Add(_bus.Subscribe<EventA>(_ => calls++));
+            bag.Add(_bus.Subscribe<EventB>(_ => calls++));
+
+            bag.Dispose();
+            _bus.Publish(new EventA());
+            _bus.Publish(new EventB());
+
+            Assert.AreEqual(0, calls);
+        }
+
+        [Test]
+        public void EventBus_SubscribeNull_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => _bus.Subscribe<EventA>(null));
         }
 
         // ── Test event types ─────────────────────────────────────────────────────

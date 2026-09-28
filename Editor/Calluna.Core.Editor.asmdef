@@ -1,7 +1,9 @@
 {
     "name": "Calluna.Core.Editor",
     "rootNamespace": "Calluna.Core.Editor",
-    "references": [],
+    "references": [
+        "Calluna.Core"
+    ],
     "includePlatforms": [
         "Editor"
     ],

@@ -1,7 +1,11 @@
+using System;
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+
+// Also covers the obsolete string-id APIs until their removal in 2.0.0.
+#pragma warning disable CS0618
 
 namespace Calluna.Core.Tests
 {
@@ -182,6 +186,70 @@ namespace Calluna.Core.Tests
 
             Assert.AreEqual(1, updateCount, "Update-phase callback should fire exactly once.");
             Assert.AreEqual(1, lateUpdateCount, "LateUpdate-phase callback should fire exactly once.");
+        }
+
+        // ---- Keyed by callback ----
+
+        private int _callbackCount;
+        private void CountCallback() => _callbackCount++;
+
+        [UnityTest, Description("Same callback scheduled several times in a frame => Fires once?")]
+        public IEnumerator UpdateScheduler_ScheduleOnceCallback_SameCallbackTwice_FiresOnce()
+        {
+            _callbackCount = 0;
+            _scheduler.ScheduleOnce(CountCallback);
+            _scheduler.ScheduleOnce(CountCallback);
+            _scheduler.ScheduleOnce(CountCallback, UpdateScheduler.SchedulePhase.Update);
+
+            yield return null;
+            yield return null;
+
+            Assert.AreEqual(1, _callbackCount);
+        }
+
+        [UnityTest, Description("Different callbacks scheduled => Each fires?")]
+        public IEnumerator UpdateScheduler_ScheduleOnceCallback_DifferentCallbacks_EachFires()
+        {
+            int first = 0;
+            int second = 0;
+            _scheduler.ScheduleOnce(() => first++);
+            _scheduler.ScheduleOnce(() => second++);
+
+            yield return null;
+
+            Assert.AreEqual(1, first);
+            Assert.AreEqual(1, second);
+        }
+
+        [UnityTest, Description("Callback cancelled => Doesn't fire?")]
+        public IEnumerator UpdateScheduler_CancelCallback_DoesNotFire()
+        {
+            _callbackCount = 0;
+            _scheduler.ScheduleOnce(CountCallback);
+            _scheduler.Cancel(CountCallback);
+
+            yield return null;
+
+            Assert.AreEqual(0, _callbackCount);
+        }
+
+        [UnityTest, Description("Callback scheduled again after it fired => Fires again?")]
+        public IEnumerator UpdateScheduler_ScheduleOnceCallback_AfterFiring_FiresAgain()
+        {
+            _callbackCount = 0;
+            _scheduler.ScheduleOnce(CountCallback);
+            yield return null;
+
+            _scheduler.ScheduleOnce(CountCallback);
+            yield return null;
+
+            Assert.AreEqual(2, _callbackCount);
+        }
+
+        [Test, Description("ScheduleOnce null => Throws ArgumentNullException?")]
+        public void UpdateScheduler_ScheduleOnceNull_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => _scheduler.ScheduleOnce((Action)null));
         }
     }
 }

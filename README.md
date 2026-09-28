@@ -13,77 +13,111 @@ interface ReadonlyObservable<T>
 
 ### Usage
 
+#### Create
+```c#
+Observable<TValue> observableValue = new Observable<TValue>(new TValue());
+Observable<TValue> empty = new Observable<TValue>(); // default(TValue)
+```
+
 #### Read Value
 ```c#
-Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
 TValue value = observableValue.Value;
 ```
 
 #### Read Value Implicitly
 ```c#
-Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
 TValue value = observableValue;
 ```
 
 #### Set Value
 ```c#
-Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
 observableValue.Value = new TValue();
 ```
 
-#### Set Implicitly
-```c#
-Observable<TValue> observableValue = new TValue();
-```
+The implicit conversion from `TValue` to `Observable<TValue>` (`Observable<TValue> observableValue = new TValue();`) is obsolete and will be removed in 2.0.0 - assigning a value to an observable field that way silently replaced the observable and dropped its listeners. Use the constructor.
 
 #### Check for Value
 ```c#
-Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
 bool hasValue = observableValue.HasValue;
 ```
 
 #### Set Without Notifying Listeners
 ```c#
-Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
 observableValue.SetValueWithoutNotify(new TValue());
 ```
 
 #### Expose Readonly Observable
 ```c#
-private Observable<TValue> _observableValue = new TValue();
+private readonly Observable<TValue> _observableValue = new Observable<TValue>(new TValue());
 public ReadonlyObservable<TValue> ObservableValue => _observableValue;
 ```
 
 #### Listen to Value Change
+`Subscribe` returns an `IDisposable` that ends the subscription - no need to keep the delegate around for unsubscribing.
 ```c#
-Observable<TValue> observableValue = new Observable<TValue>() { Value = new TValue() };
-observableValue.OnChanged += () => { Debug.Log("On value changed"); };
+IDisposable subscription = observableValue.Subscribe(() => Debug.Log("On value changed"));
 observableValue.Value = new TValue();
+subscription.Dispose();
 ```
 **On value changed**
 
 #### Listen to Value Change With Values
 ```c#
-Observable<int> observableValue = new Observable<int>() { Value = 2 };
-observableValue.OnChangedWithValues += (int former, int newValue) => { Debug.Log($"On value changed ({former} | {newValue})"); };
+Observable<int> observableValue = new Observable<int>(2);
+observableValue.Subscribe((int former, int newValue) => Debug.Log($"On value changed ({former} | {newValue})"));
 observableValue.Value = 5;
 ```
 **On value changed (2 | 5)**
 
+The events `OnChanged` and `OnChangedWithValues` can still be used directly (`+=` / `-=`).
+
+#### End Several Subscriptions Together
+A `SubscriptionBag` collects subscriptions - from observables, the event bus or any other `IDisposable` - and ends them all on `Dispose`, in reverse order. The bag is empty afterwards and can be filled again, e.g. by a pooled object.
+```c#
+private readonly SubscriptionBag _subscriptions = new SubscriptionBag();
+
+public void Initialize()
+{
+    _subscriptions.Add(_score.Subscribe(UpdateLabel));
+    _subscriptions.Add(_eventBus.Subscribe<LevelLoadedEvent>(OnLevelLoaded));
+}
+
+public void Clean() => _subscriptions.Dispose();
+```
+
+#### Only Actual Changes Notify
+Setting the current value again doesn't notify listeners. Values are compared with `EqualityComparer<T>.Default`; Unity objects are compared by reference, because a destroyed one equals `null` and a change from it to `null` would otherwise be lost.
+```c#
+Observable<int> observableValue = new Observable<int>(2);
+observableValue.Subscribe(() => Debug.Log("On value changed"));
+observableValue.Value = 2; // nothing logged
+```
+Values changed in place - arrays, lists, other mutable objects - count as unchanged when the same instance is set again. Assign a new instance instead:
+```c#
+int[] updated = (int[])observableArray.Value.Clone();
+updated[0] = 5;
+observableArray.Value = updated;
+```
+Commands ("show this popup again") aren't values and shouldn't be sent through an observable; use an event instead.
+
+#### Find Code Relying on Unchanged-Value Notifications
+In the editor, **Calluna > Diagnostics > Log Unchanged Observable Values** logs every place that sets an observable to its current value while listeners are subscribed - each call site once per play session, with the listeners no longer being called. Useful when migrating code written for the former behavior.
+
 ---
 
 ## Observable Collections
-`ObservableList<TValue>` is a list that fires events when items are added, removed, replaced, or swapped.
+`ObservableList<TValue>` is a list that notifies subscribers when items are added, removed, replaced or swapped, or its whole content changes at once (a reset: `Clear`, `OverrideWith`).
 Use `ReadonlyObservableList<TValue>` to expose the list without allowing external mutation.
 
 ```c#
 class ObservableList<TValue> : IList<TValue>, ReadonlyObservableList<TValue>
 interface ReadonlyObservableList<TValue> : IReadOnlyList<TValue>
-class ObservableListChangeDetector<TValue> : IDisposable
+readonly struct ListChange<T>
+enum ListChangeKind { Added, Removed, Replaced, Swapped, Reset }
 
-delegate void ItemChangeEvent<TValue>(TValue item, int index)
-delegate void ItemReplaceEvent<TValue>(TValue newItem, TValue formerItem, int index)
-delegate void ItemSwapEvent<TValue>(TValue newIndex1Item, int index1, TValue newIndex2Item, int index2)
+delegate void ItemHandler<TValue>(TValue item, int index)
+delegate void ReplaceHandler<TValue>(TValue newItem, TValue formerItem, int index)
+delegate void SwapHandler<TValue>(TValue newIndex1Item, int index1, TValue newIndex2Item, int index2)
 ```
 
 ### Usage
@@ -99,7 +133,7 @@ public ReadonlyObservableList<TValue> List => _list;
 #### Add / Insert / Remove / Clear
 ```c#
 _list.Add(item);
-_list.Insert(index, item); // inserts at index; fires OnItemAdded
+_list.Insert(index, item); // inserts at index; notifies as added
 _list.Remove(item);        // returns bool
 _list.RemoveAt(index);
 _list.Clear();
@@ -107,7 +141,7 @@ _list.Clear();
 
 #### Replace Item at Index
 ```c#
-_list[index] = newItem;   // fires OnItemReplaced
+_list[index] = newItem;   // notifies as replaced
 ```
 
 #### Swap Two Items
@@ -117,41 +151,53 @@ _list.Swap(indexA, indexB);
 
 #### Override Contents (bulk)
 ```c#
-// Replaces all contents in-place to match the new sequence.
-// No per-item events are fired; OnContentsReplaced is raised once when done.
+// Replaces all contents in-place to match the new sequence - notifies as one reset.
 _list.OverrideWith(newItems);
 ```
 
 #### Override Contents (per-item events)
 ```c#
-// Diff-and-patch update: fires OnItemsSwapped, OnItemReplaced, OnItemAdded, and
-// OnItemRemoved for each individual change. OnContentsReplaced is NOT fired.
-// Use this when listeners need to react to each slot change rather than a bulk reset.
+// Diff-and-patch update: notifies each swap, replacement, addition and removal on its own -
+// no reset. Use this when subscribers need to react to each slot change rather than a bulk reset.
 _list.OverrideWithEvents(newItems);
 ```
 
-#### Listen to Events
+#### Subscribe to Changes
+Pass the handlers you need by name. Each Subscribe returns an `IDisposable` that ends the notifications - e.g. collected in a `SubscriptionBag`.
 ```c#
-_list.OnItemAdded += (TValue item, int index) => { };
-_list.OnItemRemoved += (TValue item, int index) => { };
-_list.OnItemReplaced += (TValue newItem, TValue formerItem, int index) => { };
-_list.OnItemsSwapped += (TValue newAt0, int index0, TValue newAt1, int index1) => { };
-_list.OnClean += () => { };             // fires once when Clear() is called; OnItemRemoved is NOT fired per element
-_list.OnContentsReplaced += () => { };  // fires once when OverrideWith() completes; NOT fired by OverrideWithEvents()
+_subscriptions.Add(_list.Subscribe(added: OnAdded));
+
+_subscriptions.Add(_list.Subscribe(
+    added: (TValue item, int index) => { },
+    removed: (TValue item, int index) => { },
+    replaced: (TValue newItem, TValue formerItem, int index) => { },
+    swapped: (TValue newAt0, int index0, TValue newAt1, int index1) => { },
+    reset: () => { }));
+```
+Without a `reset` handler, a reset is delivered as the removal of every former item (last to first) followed by the addition of every current item. So a subscriber that only passes `added` still sees the items `OverrideWith` adds - no change can be missed by leaving a handler out. When those handlers run, the list already holds its new contents. Pass `reset` to rebuild once instead.
+
+#### React to Any Change
+```c#
+_subscriptions.Add(_list.SubscribeAny(Rebuild)); // once per change, once per reset
 ```
 
-#### Detect Any Change with ObservableListChangeDetector
-`ObservableListChangeDetector` routes all four item events, `OnClean`, and `OnContentsReplaced` into a single `OnChanged` event, so you can react to any mutation — including `Clear()`, `OverrideWith()`, and `OverrideWithEvents()` — from one subscription.
+#### Receive Every Change as a Value
+For special cases, e.g. forwarding changes, one handler receives every change as a `ListChange<T>`; a reset arrives as a single `ListChangeKind.Reset` change.
 ```c#
-using var detector = new ObservableListChangeDetector<TValue>(_list);
-detector.OnChanged += () => { Debug.Log("List changed"); };
-// detector.Dispose() unsubscribes all listeners
+_subscriptions.Add(_list.Subscribe((ListChange<TValue> change) =>
+{
+    if (change.Kind == ListChangeKind.Replaced)
+        Debug.Log($"{change.FormerItem} -> {change.Item} at {change.Index}");
+}));
 ```
+
+#### Obsolete: Events and ObservableListChangeDetector
+The events `OnItemAdded`, `OnItemRemoved`, `OnItemReplaced`, `OnItemsSwapped`, `OnClean` and `OnContentsReplaced`, their delegate types (`ItemChangeEvent`, `ItemReplaceEvent`, `ItemSwapEvent`) and `ObservableListChangeDetector` are obsolete and will be removed in 2.0.0. A subscriber had to handle all six events to not miss changes; use `Subscribe` and `SubscribeAny` instead.
 
 ---
 
 ## Accumulating Values
-Accumulating values maintain a named dictionary of partial values that combine into a single result exposed as a `ReadonlyObservable<T>`. Use this to aggregate contributions from multiple independent sources (e.g. stat bonuses).
+Accumulating values combine parts into a single result exposed as a `ReadonlyObservable<T>`. Use this to aggregate contributions from multiple independent sources (e.g. stat bonuses). Each source adds a part and keeps it to change or remove its contribution later.
 
 ```c#
 abstract class AccumulatingValue<T>
@@ -162,14 +208,30 @@ class AccumulatingBoolValue : AccumulatingValue<bool>      // Any (default) or A
 
 ### Usage
 
-#### Add, Set, and Remove Parts
+#### Add, Change, and Remove Parts
 ```c#
 AccumulatingIntValue speed = new AccumulatingIntValue();
-speed.Add("base", 10);       // throws if id already exists
-speed.Add("bonus", 5);
-speed.Set("bonus", 8);       // upserts — safe to call on new or existing id
-speed.Remove("bonus");       // throws if id does not exist
+AccumulatingValuePart<int> baseSpeed = speed.AddPart(10); // contributes right away
+AccumulatingValuePart<int> bonus = speed.AddPart();       // doesn't contribute yet
+bonus.Value = 8;  // contributes, recalculates
+bonus.Clear();    // withdraws the contribution; the part stays usable
+bool active = bonus.IsSet;
+bonus.Dispose();  // removes the part for good; disposing again does nothing
 ```
+A contributor keeps its part and switches its contribution with `Value` and `Clear()` - no need to check whether it's currently added. A cleared part counts as if it didn't exist, so the accumulated value returns to what it would be without it in every mode (e.g. an `All` value isn't blocked by a cleared part). Dispose a part when its owner ends before the accumulated value does; setting the value of a disposed part throws, clearing it does nothing.
+
+#### Parts Kept by Key
+When contributors are identified by data rather than being objects that keep a part - requester names passed to a method, ids authored in assets, pooled views - `KeyedAccumulatingParts<TKey, T>` keeps one part per key:
+```c#
+private readonly AccumulatingBoolValue _requests = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+private readonly KeyedAccumulatingParts<string, bool> _requesters;
+
+public Blocker() => _requesters = new KeyedAccumulatingParts<string, bool>(_requests);
+public void Show(string requesterId) => _requesters.Set(requesterId, true);
+public void Hide(string requesterId) => _requesters.Clear(requesterId);
+```
+Prefer an own part wherever the contributor is an object. Only the owner of the collection knows its keys, unlike the obsolete string ids, which anyone could change.
+The string-id methods (`Add`, `Set`, `Remove`, `TryGetValuePart`, the indexer) are obsolete and will be removed in 2.0.0. They avoided id collisions only by convention; a part belongs to whoever added it.
 
 #### Read the Result
 ```c#
@@ -184,8 +246,7 @@ public ReadonlyObservable<int> Speed => speed.Value;
 
 #### Read a Specific Part
 ```c#
-int baseSpeed = speed["base"];
-bool found = speed.TryGetValuePart("base", out int val);
+int baseValue = baseSpeed.Value;
 ```
 
 #### AccumulatingFloatValue Modes
@@ -199,6 +260,16 @@ AccumulatingFloatValue product = new AccumulatingFloatValue(AccumulatingFloatVal
 AccumulatingBoolValue anyTrue = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
 AccumulatingBoolValue allTrue = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.All);
 ```
+
+#### Value Without Parts
+Without any parts, `Value` holds the mode's neutral value - the same value it returns to once all parts are removed again:
+
+| Type / mode | Value without parts |
+|---|---|
+| `AccumulatingIntValue`, `AccumulatingFloatValue` `Sum` | `0` |
+| `AccumulatingFloatValue` `Multiply` | `1` |
+| `AccumulatingBoolValue` `Any` | `false` |
+| `AccumulatingBoolValue` `All` | `true` |
 
 ---
 
@@ -252,8 +323,9 @@ class Vector3ValueTweener : ValueTweener<Vector3>
 | Member | Description |
 |---|---|
 | `IsTweening` | `true` while a tween coroutine is running. |
-| `Perform(start, end, duration, tweenType, updateAction)` | Starts (or replaces) a tween. When `duration <= 0`, `updateAction` is called immediately with `end` and no coroutine is started. |
+| `Perform(start, end, duration, tweenType, updateAction)` | Starts (or replaces) a tween. When `duration <= 0`, a running tween is stopped, `updateAction` is called immediately with `end` and no coroutine is started. |
 | `PerformAndWait(start, end, duration, tweenType, updateAction)` | Same as `Perform`, but returns a `CustomYieldInstruction` that completes when the tween finishes. Use with `yield return` to sequence work after the tween. |
+| `UseUnscaledTime` | `false` (default): tweens advance with `Time.deltaTime`. `true`: with `Time.unscaledDeltaTime`, e.g. to keep UI animating while the game is paused via `Time.timeScale`. Also applies to a running tween. |
 | `Stop()` | Cancels any in-progress tween and sets `IsTweening` to `false`. |
 | `Dispose()` | Calls `Stop()`. |
 
@@ -321,22 +393,39 @@ timer.Dispose(); // same as Stop()
 ---
 
 ## CoroutineHelper
-`CoroutineHelper` is a `MonoBehaviour` that wraps Unity coroutines with string IDs, preventing duplicate coroutines and allowing targeted stop or replace operations. It is the backing component for `Timer`.
+`CoroutineHelper` is a `MonoBehaviour` running coroutines for plain C# classes. `Run` returns a `CoroutineHandle` to stop the routine or check whether it's still running; a `CoroutineSlot` keeps at most one routine of a kind running. It is the backing component for `Timer` and the value tweeners.
 
 ```c#
 class CoroutineHelper : MonoBehaviour
+sealed class CoroutineHandle : CustomYieldInstruction
+sealed class CoroutineSlot : IDisposable
 ```
 
 ### Usage
 
+#### Run and Stop
 ```c#
 CoroutineHelper helper = gameObject.AddComponent<CoroutineHelper>();
 
-helper.StartWithID(MyEnumerator(), "myId");    // throws if id already running
-helper.ReplaceWithID(MyEnumerator(), "myId");  // stops existing, starts new
-helper.StopWithID("myId");                     // returns bool — false if not found
-bool running = helper.HasRoutineWith("myId");
+CoroutineHandle handle = helper.Run(MyEnumerator()); // runs up to the first yield right away
+bool running = handle.IsRunning; // false once completed, thrown, stopped or the helper was destroyed
+handle.Stop();                   // does nothing if already ended
+
+yield return helper.Run(Other()); // inside a coroutine: waits until Other ended
 ```
+A routine throwing an exception is logged and ends; its handle reports it as not running.
+
+#### One Routine at a Time
+```c#
+private readonly CoroutineSlot _fadeSlot = new CoroutineSlot(helper);
+
+_fadeSlot.Run(FadeIn());  // stops a running fade first
+_fadeSlot.Run(FadeOut());
+bool fading = _fadeSlot.IsRunning;
+_fadeSlot.Dispose();      // stops the running fade, e.g. in Clean()
+```
+
+The string-id methods (`StartWithID`, `ReplaceWithID`, `StopWithID`, `HasRoutineWith`) are obsolete and will be removed in 2.0.0; ids only needed to be unique per routine, which a slot or handle is by construction.
 
 ---
 
@@ -364,10 +453,32 @@ bool sameString = idA == "some-id";      // compares Id field
 string idValue  = idA.ToString();        // returns Id field
 ```
 
+#### Typed Keys with Id&lt;TDefinition&gt;
+Deriving from `ScriptableObjectId<TSelf>` instead adds a `Key` of type `Id<TSelf>`: a value type compared by its string (ordinal). Logic, dictionaries and tests can use keys without loading the assets, and keys of different definition types can't be mixed up.
+```c#
+public class ItemId : ScriptableObjectId<ItemId> { }
+
+Id<ItemId> key = itemAsset.Key;
+Dictionary<Id<ItemId>, int> counts = new Dictionary<Id<ItemId>, int>();
+counts[new Id<ItemId>("apple")] = 3;     // e.g. in a test - no asset needed
+bool same = key == new Id<ItemId>("apple");
+bool valid = key.IsValid;                // false for default or empty ids
+```
+Switching an existing class from `ScriptableObjectId` to `ScriptableObjectId<TSelf>` keeps its serialized ids - the field stays declared in `ScriptableObjectId`. Never rename the `Id` property: its backing field `<Id>k__BackingField` is what the assets store.
+
+#### Validate Ids
+Keys only work when every asset has an id that's unique within its type. **Calluna > Diagnostics > Validate ScriptableObject Ids** logs empty and duplicated ids. To guard a project, run the check in an edit mode test (the test assembly references `Calluna.Core.Editor`):
+```c#
+[Test]
+public void ScriptableObjectIds_AreSetAndUnique() =>
+    Assert.IsEmpty(Calluna.Core.Editor.ScriptableObjectIdValidator.FindProblems());
+```
+`ScriptableObjectIdValidation.FindProblems` runs the same checks on any given ids.
+
 ---
 
 ## EnumerableUtility
-Static utility class providing allocation-free aggregate operations over `IEnumerable<T>` sequences. Used internally by the `AccumulatingValue` types, but available for general use.
+**Obsolete, will be removed in 2.0.0.** Iterating an `IEnumerable<T>` allocates an enumerator for most collections, so these helpers don't avoid allocations as intended; loop over the concrete collection instead. No longer used by the `AccumulatingValue` types.
 
 ```c#
 static class EnumerableUtility
@@ -410,7 +521,7 @@ class DontDestroyOnLoad : MonoBehaviour
 
 ## Event Bus
 
-`IEventBus` is a typed publish/subscribe message bus. Use it to decouple publishers from subscribers — neither side needs a direct reference to the other. The concrete `EventBus` class uses breadth-first, re-entrancy-safe dispatch: events published from inside a listener are queued and processed after the current dispatch batch completes.
+`IEventBus` is a typed publish/subscribe message bus. Use it to decouple publishers from subscribers — neither side needs a direct reference to the other. The concrete `EventBus` class uses breadth-first, re-entrancy-safe dispatch: events published from inside a listener are queued and processed after the current dispatch batch completes. A listener throwing an exception is logged via `Debug.LogException` and doesn't stop the other listeners or the delivery of queued events. Listeners subscribed or unsubscribed during dispatch take effect from the next delivered event on.
 
 ```c#
 interface IEventBus
@@ -421,7 +532,7 @@ class EventBus : IEventBus
 
 | Method | Description |
 |---|---|
-| `Subscribe<TEvent>(Action<TEvent> listener)` | Register a listener for events of type `TEvent`. |
+| `Subscribe<TEvent>(Action<TEvent> listener)` | Register a listener for events of type `TEvent`. Returns an `IDisposable` that unsubscribes it. |
 | `Unsubscribe<TEvent>(Action<TEvent> listener)` | Remove a previously registered listener. Safe to call if not subscribed. |
 | `Publish<TEvent>(TEvent evt)` | Dispatch `evt` to all current listeners of `TEvent`. |
 
@@ -443,9 +554,9 @@ public struct ScoreChangedEvent
 ```c#
 IEventBus bus = new EventBus();
 
-bus.Subscribe<ScoreChangedEvent>(OnScoreChanged);
+IDisposable subscription = bus.Subscribe<ScoreChangedEvent>(OnScoreChanged);
 bus.Publish(new ScoreChangedEvent { NewScore = 42 });
-bus.Unsubscribe<ScoreChangedEvent>(OnScoreChanged);
+subscription.Dispose(); // or: bus.Unsubscribe<ScoreChangedEvent>(OnScoreChanged);
 
 void OnScoreChanged(ScoreChangedEvent evt) => Debug.Log(evt.NewScore);
 ```
@@ -464,7 +575,7 @@ public IEventBus EventBus => _eventBus;
 ---
 
 ## UpdateScheduler
-`UpdateScheduler` is a `MonoBehaviour` that defers callbacks to a specific Unity update phase within the current frame, deduplicating multiple requests with the same string ID. First registration wins: if `ScheduleOnce` is called more than once in a frame with the same ID, only the first callback runs.
+`UpdateScheduler` is a `MonoBehaviour` that defers callbacks to a specific Unity update phase within the current frame, deduplicating multiple requests for the same callback. Scheduling a callback that is already pending is ignored, so several changes in one frame cause a single call. Callbacks count as the same when they are equal delegates - the same method on the same instance, e.g. a method group. A lambda capturing variables is a new delegate on every call and is never deduplicated; keep it in a field instead.
 
 ```c#
 class UpdateScheduler : MonoBehaviour
@@ -477,17 +588,19 @@ enum UpdateScheduler.SchedulePhase { Update, LateUpdate }
 UpdateScheduler scheduler = gameObject.AddComponent<UpdateScheduler>();
 
 // Schedule a callback for the end of this frame (LateUpdate is the default phase).
-scheduler.ScheduleOnce("refresh-ui", () => RefreshUI(), UpdateScheduler.SchedulePhase.LateUpdate);
+scheduler.ScheduleOnce(RefreshUI);
+scheduler.ScheduleOnce(RefreshUI); // ignored - already pending
 
 // Schedule a callback for Update instead.
-scheduler.ScheduleOnce("apply-movement", () => ApplyMovement(), UpdateScheduler.SchedulePhase.Update);
+scheduler.ScheduleOnce(ApplyMovement, UpdateScheduler.SchedulePhase.Update);
 
 // Cancel a specific pending callback before it runs.
-scheduler.Cancel("refresh-ui");
+scheduler.Cancel(RefreshUI);
 
 // Cancel all pending callbacks.
 scheduler.CancelAll();
 ```
+The string-id overloads `ScheduleOnce(string, Action, SchedulePhase)` and `Cancel(string)` are obsolete and will be removed in 2.0.0.
 
 ---
 
