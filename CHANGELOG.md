@@ -1,3 +1,13 @@
+## [1.7.0-pre.3] - 2026-09-28
+
+### Added
+- `AccumulatingValuePart<T>.Clear()` and `IsSet` — withdraw a part's contribution without disposing it; setting `Value` again contributes again. A cleared part counts as if it didn't exist, in every mode. Clearing an unset or disposed part does nothing.
+- `AccumulatingValue<T>.AddPart()` — adds a part that doesn't contribute until its value is set.
+- `KeyedAccumulatingParts<TKey, T>` — one part per key, for contributors identified by data (requester names, ids authored in assets, pooled views) rather than objects keeping their own part. `Set`, `Clear`, `ClearAll`, `TryGet`; disposing removes all parts.
+
+### Changed
+- `AccumulatingValue<T>.AddPart(T value = default)` is now `AddPart(T value)`, next to the new parameterless `AddPart()`. Before, `AddPart()` contributed `default` - which blocks an `AccumulatingBoolValue` in mode `All`.
+
 ## [1.7.0-pre.2] - 2026-09-28
 
 Pre-release adding the new APIs of 1.7.0. The APIs they replace still work but are marked `[Obsolete]` and will be removed in 2.0.0, so projects can migrate step by step.

@@ -14,12 +14,21 @@ namespace Calluna
         private readonly Observable<T> _value = new Observable<T>();
 
         /// <summary>
-        /// Adds a part contributing <paramref name="value"/>. Keep the returned part to change its value
-        /// later, and dispose it to remove it again.
+        /// Adds a part that doesn't contribute yet. Keep it, set its value to contribute and clear it to
+        /// withdraw the contribution again; dispose it to remove it for good.
         /// </summary>
-        public AccumulatingValuePart<T> AddPart(T value = default)
+        public AccumulatingValuePart<T> AddPart()
         {
-            AccumulatingValuePart<T> part = new AccumulatingValuePart<T>(this, value);
+            AccumulatingValuePart<T> part = new AccumulatingValuePart<T>(this);
+            _addedParts.Add(part);
+            return part;
+        }
+
+        /// <summary>Adds a part contributing <paramref name="value"/> right away. See <see cref="AddPart()"/>.</summary>
+        public AccumulatingValuePart<T> AddPart(T value)
+        {
+            AccumulatingValuePart<T> part = new AccumulatingValuePart<T>(this);
+            part.SetWithoutNotify(value);
             _addedParts.Add(part);
             Recalculate();
             return part;
@@ -81,7 +90,10 @@ namespace Calluna
             _parts.Clear();
             _parts.AddRange(_idToValuePart.Values);
             for (int i = 0; i < _addedParts.Count; i++)
-                _parts.Add(_addedParts[i].Value);
+            {
+                if (_addedParts[i].IsSet)
+                    _parts.Add(_addedParts[i].Value);
+            }
             _value.Value = CalculateValue(_parts);
         }
 

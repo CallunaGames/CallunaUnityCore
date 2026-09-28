@@ -198,11 +198,26 @@ class AccumulatingBoolValue : AccumulatingValue<bool>      // Any (default) or A
 #### Add, Change, and Remove Parts
 ```c#
 AccumulatingIntValue speed = new AccumulatingIntValue();
-AccumulatingValuePart<int> baseSpeed = speed.AddPart(10);
-AccumulatingValuePart<int> bonus = speed.AddPart(5);
-bonus.Value = 8;  // recalculates
-bonus.Dispose();  // removes the part; disposing again does nothing
+AccumulatingValuePart<int> baseSpeed = speed.AddPart(10); // contributes right away
+AccumulatingValuePart<int> bonus = speed.AddPart();       // doesn't contribute yet
+bonus.Value = 8;  // contributes, recalculates
+bonus.Clear();    // withdraws the contribution; the part stays usable
+bool active = bonus.IsSet;
+bonus.Dispose();  // removes the part for good; disposing again does nothing
 ```
+A contributor keeps its part and switches its contribution with `Value` and `Clear()` - no need to check whether it's currently added. A cleared part counts as if it didn't exist, so the accumulated value returns to what it would be without it in every mode (e.g. an `All` value isn't blocked by a cleared part). Dispose a part when its owner ends before the accumulated value does; setting the value of a disposed part throws, clearing it does nothing.
+
+#### Parts Kept by Key
+When contributors are identified by data rather than being objects that keep a part - requester names passed to a method, ids authored in assets, pooled views - `KeyedAccumulatingParts<TKey, T>` keeps one part per key:
+```c#
+private readonly AccumulatingBoolValue _requests = new AccumulatingBoolValue(AccumulatingBoolValue.Mode.Any);
+private readonly KeyedAccumulatingParts<string, bool> _requesters;
+
+public Blocker() => _requesters = new KeyedAccumulatingParts<string, bool>(_requests);
+public void Show(string requesterId) => _requesters.Set(requesterId, true);
+public void Hide(string requesterId) => _requesters.Clear(requesterId);
+```
+Prefer an own part wherever the contributor is an object. Only the owner of the collection knows its keys, unlike the obsolete string ids, which anyone could change.
 The string-id methods (`Add`, `Set`, `Remove`, `TryGetValuePart`, the indexer) are obsolete and will be removed in 2.0.0. They avoided id collisions only by convention; a part belongs to whoever added it.
 
 #### Read the Result
