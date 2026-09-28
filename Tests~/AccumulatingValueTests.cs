@@ -135,7 +135,6 @@ namespace Calluna.Core.Tests
         [Test, Description("Add entry => Value observable fires OnChanged?")]
         [TestCase(1)]
         [TestCase(-100)]
-        [TestCase(0)]
         public void AccumulatingIntValue_Add_ObservableOnChangedFired(int value)
         {
             var acc = new AccumulatingIntValue();
@@ -145,6 +144,18 @@ namespace Calluna.Core.Tests
             acc.Add("a", value);
             acc.Value.OnChanged -= listener;
             Assert.IsTrue(fired);
+        }
+
+        [Test, Description("Add entry that doesn't change the result => No OnChanged?")]
+        public void AccumulatingIntValue_Add_ZeroPart_DoesNotFireOnChanged()
+        {
+            var acc = new AccumulatingIntValue();
+            bool fired = false;
+            acc.Value.OnChanged += () => fired = true;
+
+            acc.Add("a", 0);
+
+            Assert.IsFalse(fired);
         }
 
         // --- AccumulatingFloatValue ---

@@ -1,6 +1,13 @@
-## [Unreleased]
+## [1.7.0-pre.1] - 2026-09-28
+
+Pre-release for testing in projects; the new APIs planned for 1.7.0 (IDisposable subscriptions, coroutine handles, accumulating value parts, Id<TDefinition>) follow in later pre-releases.
+
+### Added
+- `ObservableDiagnostics` (editor only) and the menu **Calluna > Diagnostics > Log Unchanged Observable Values** — logs each call site that sets an observable to its current value while listeners are subscribed, once per play session, with the listeners that are no longer called. Helps find code relying on the former notify-on-every-set behavior.
 
 ### Changed
+- `Observable<T>` — **behavior change:** setting a value equal to the current one (per `EqualityComparer<T>.Default`) no longer notifies `OnChanged` / `OnChangedWithValues`. Unity objects are compared by reference, so a change from a destroyed object to `null` still notifies. Code that mutates a held array/list/object and sets the same instance again to trigger listeners must assign a new instance; code sending commands through an observable should use an event instead.
+- `Calluna.Core.Editor` — now references `Calluna.Core`.
 - `EventBus` — a listener throwing an exception no longer stops the remaining listeners of that event, nor leaves queued events waiting for the next `Publish`. The exception is logged via `Debug.LogException` instead of propagating to the publisher. Listeners are stored per event type in an array replaced on (un)subscribe, so `Publish` stays allocation-free; listeners subscribed or unsubscribed during dispatch still take effect from the next delivered event on.
 - `AccumulatingValue<T>` — `Value` now starts at the mode's neutral value, the same value it returns to once all parts are removed: `AccumulatingBoolValue` `All` starts `true` (was `false`), `AccumulatingFloatValue` `Multiply` starts `1` (was `0`). Recalculation no longer allocates an enumerator.
 - `package.json` — minimum Unity version corrected to `6000.0.33f1` (`"unity": "6000.0"`, `"unityRelease": "33f1"`); it read `6000.33`, a version that doesn't exist.

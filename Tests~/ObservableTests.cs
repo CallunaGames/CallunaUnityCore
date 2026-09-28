@@ -1,5 +1,9 @@
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+using Object = UnityEngine.Object;
 
 namespace Calluna.Core.Tests
 {
@@ -106,6 +110,119 @@ namespace Calluna.Core.Tests
             observable.Value = null;
             Assert.IsFalse(observable.HasValue);
         }
+
+        // ── Notify only on change ───────────────────────────────────────────────
+
+        [Test, Description("Set the current value again => No notification?")]
+        public void Observable_SetSameValue_DoesNotNotify<T>(
+            [ValueSource(nameof(_testValues))] TestValues<T> value)
+        {
+            Observable<T> observable = new Observable<T>() { Value = value.FormerValue };
+            int calls = 0;
+            observable.OnChanged += () => calls++;
+            observable.OnChangedWithValues += (_, _) => calls++;
+
+            observable.Value = value.FormerValue;
+
+            Assert.AreEqual(0, calls);
+        }
+
+        [Test, Description("Set an equal but different instance (value equality) => No notification?")]
+        public void Observable_SetEqualInstance_DoesNotNotify()
+        {
+            Observable<string> observable = new Observable<string>() { Value = "text" };
+            bool called = false;
+            observable.OnChanged += () => called = true;
+
+            observable.Value = new string("text".ToCharArray());
+
+            Assert.IsFalse(called);
+        }
+
+        [Test, Description("Set another instance of a class without value equality => Notified?")]
+        public void Observable_SetOtherInstanceWithoutValueEquality_Notifies()
+        {
+            Observable<Foo> observable = new Observable<Foo>() { Value = new Foo { Value = 1 } };
+            bool called = false;
+            observable.OnChanged += () => called = true;
+
+            observable.Value = new Foo { Value = 1 };
+
+            Assert.IsTrue(called);
+        }
+
+        [Test, Description("Mutate the held array and set it again => No notification (same instance)?")]
+        public void Observable_SetMutatedSameArray_DoesNotNotify()
+        {
+            int[] values = { 1, 2 };
+            Observable<int[]> observable = new Observable<int[]>() { Value = values };
+            bool called = false;
+            observable.OnChanged += () => called = true;
+
+            values[0] = 5;
+            observable.Value = values;
+
+            Assert.IsFalse(called, "In-place changes need a new instance to count as a change");
+        }
+
+        [Test, Description("Change from a destroyed Unity object to null => Notified?")]
+        public void Observable_SetNullAfterUnityObjectDestroyed_Notifies()
+        {
+            GameObject gameObject = new GameObject("ObservableTest");
+            Observable<GameObject> observable = new Observable<GameObject>() { Value = gameObject };
+            bool called = false;
+            observable.OnChanged += () => called = true;
+            Object.DestroyImmediate(gameObject);
+
+            observable.Value = null;
+
+            Assert.IsTrue(called, "A destroyed Unity object equals null, but is a different reference");
+        }
+
+#if UNITY_EDITOR
+        // ── Diagnostics ──────────────────────────────────────────────────────────
+
+        [Test, Description("Diagnostics on, same value set with listeners => Warning logged once per call site?")]
+        public void ObservableDiagnostics_SameValueWithListeners_LogsOncePerSite()
+        {
+            ObservableDiagnostics.ResetReportedSites();
+            ObservableDiagnostics.LogUnchangedValues = true;
+            try
+            {
+                Observable<int> observable = new Observable<int>() { Value = 3 };
+                observable.OnChanged += () => { };
+                LogAssert.Expect(LogType.Warning, new Regex(@"Observable<Int32> set to its current value"));
+
+                for (int i = 0; i < 3; i++)
+                    observable.Value = 3;
+
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                ObservableDiagnostics.LogUnchangedValues = false;
+            }
+        }
+
+        [Test, Description("Diagnostics on, same value set without listeners => Nothing logged?")]
+        public void ObservableDiagnostics_SameValueWithoutListeners_LogsNothing()
+        {
+            ObservableDiagnostics.ResetReportedSites();
+            ObservableDiagnostics.LogUnchangedValues = true;
+            try
+            {
+                Observable<int> observable = new Observable<int>() { Value = 3 };
+
+                observable.Value = 3;
+
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                ObservableDiagnostics.LogUnchangedValues = false;
+            }
+        }
+#endif
 
         public struct TestValues<T>
         {

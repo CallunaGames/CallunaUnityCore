@@ -70,6 +70,24 @@ observableValue.Value = 5;
 ```
 **On value changed (2 | 5)**
 
+#### Only Actual Changes Notify
+Setting the current value again doesn't notify listeners. Values are compared with `EqualityComparer<T>.Default`; Unity objects are compared by reference, because a destroyed one equals `null` and a change from it to `null` would otherwise be lost.
+```c#
+Observable<int> observableValue = new Observable<int>() { Value = 2 };
+observableValue.OnChanged += () => { Debug.Log("On value changed"); };
+observableValue.Value = 2; // nothing logged
+```
+Values changed in place - arrays, lists, other mutable objects - count as unchanged when the same instance is set again. Assign a new instance instead:
+```c#
+int[] updated = (int[])observableArray.Value.Clone();
+updated[0] = 5;
+observableArray.Value = updated;
+```
+Commands ("show this popup again") aren't values and shouldn't be sent through an observable; use an event instead.
+
+#### Find Code Relying on Unchanged-Value Notifications
+In the editor, **Calluna > Diagnostics > Log Unchanged Observable Values** logs every place that sets an observable to its current value while listeners are subscribed - each call site once per play session, with the listeners no longer being called. Useful when migrating code written for the former behavior.
+
 ---
 
 ## Observable Collections

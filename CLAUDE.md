@@ -21,7 +21,8 @@ All runtime code lives under the `Calluna` namespace. The single runtime assembl
 ### Key Patterns
 
 **Observable / ReadonlyObservable**
-- `Observable<T>` wraps a value and fires `OnChanged` (no args) or `OnChangedWithValues(former, new)` on mutation.
+- `Observable<T>` wraps a value and fires `OnChanged` (no args) or `OnChangedWithValues(former, new)` when the value actually changes (`EqualityComparer<T>.Default`; Unity objects by reference). Setting the current value again doesn't notify.
+- Editor-only `ObservableDiagnostics` (menu Calluna > Diagnostics) logs call sites that set an unchanged value while listeners are subscribed.
 - Expose as `ReadonlyObservable<T>` to prevent external writes.
 - Implicit operators allow `Observable<int> x = 5;` and `int y = x;`.
 - Use `SetValueWithoutNotify()` for silent updates.
