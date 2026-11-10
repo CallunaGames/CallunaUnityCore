@@ -82,13 +82,32 @@ namespace Calluna
             return value;
         }
 
-        // Pre-allocated delegates indexed by TweenType enum value (0–9) to avoid per-call allocation.
+        public static float EaseInQuint(float value)
+        {
+            ValidateValue(value);
+            return value * value * value * value * value;
+        }
+
+        public static float EaseOutQuint(float value)
+        {
+            ValidateValue(value);
+            return 1 - Mathf.Pow(1 - value, 5);
+        }
+
+        public static float EaseInOutQuint(float value)
+        {
+            ValidateValue(value);
+            return value < 0.5f ? 16 * value * value * value * value * value : 1 - Mathf.Pow(-2 * value + 2, 5) / 2;
+        }
+
+        // Pre-allocated delegates indexed by TweenType enum value (0–12) to avoid per-call allocation.
         private static readonly Func<float, float>[] _easeFunctions =
         {
             EaseInOutSine, EaseInSine, EaseOutSine,
             EaseInOutCubic, EaseInCubic, EaseOutCubic,
             EaseInOutBack, EaseInBack, EaseOutBack,
             Linear,
+            EaseInOutQuint, EaseInQuint, EaseOutQuint,
         };
 
         public static Func<float, float> GetEaseFunction(TweenType tweenType)

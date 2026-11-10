@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using NUnit.Framework;
 
 namespace Calluna.Core.Tests
@@ -46,6 +47,9 @@ namespace Calluna.Core.Tests
             Assert.Throws<ArgumentException>(() => Tween.EaseInBack(input));
             Assert.Throws<ArgumentException>(() => Tween.EaseOutBack(input));
             Assert.Throws<ArgumentException>(() => Tween.EaseInOutBack(input));
+            Assert.Throws<ArgumentException>(() => Tween.EaseInQuint(input));
+            Assert.Throws<ArgumentException>(() => Tween.EaseOutQuint(input));
+            Assert.Throws<ArgumentException>(() => Tween.EaseInOutQuint(input));
         }
 
         [Test, Description("EaseFunction => Throws ArgumentException for input above 1?")]
@@ -63,6 +67,9 @@ namespace Calluna.Core.Tests
             Assert.Throws<ArgumentException>(() => Tween.EaseInBack(input));
             Assert.Throws<ArgumentException>(() => Tween.EaseOutBack(input));
             Assert.Throws<ArgumentException>(() => Tween.EaseInOutBack(input));
+            Assert.Throws<ArgumentException>(() => Tween.EaseInQuint(input));
+            Assert.Throws<ArgumentException>(() => Tween.EaseOutQuint(input));
+            Assert.Throws<ArgumentException>(() => Tween.EaseInOutQuint(input));
         }
 
         [Test, Description("EaseInSine => Returns expected values at midpoints?")]
@@ -142,10 +149,16 @@ namespace Calluna.Core.Tests
         [Test, Description("GetEaseFunction invalid TweenType => Throws ArgumentOutOfRangeException?")]
         [TestCase(-1)]
         [TestCase(100)]
-        [TestCase(10)]
         public void Tween_GetEaseFunction_InvalidTweenType_ThrowsArgumentOutOfRangeException(int invalidValue)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Tween.GetEaseFunction((TweenType)invalidValue));
+        }
+
+        [Test, Description("GetEaseFunction => Throws for the first value after the last TweenType?")]
+        public void Tween_GetEaseFunction_ValueAfterLastTweenType_ThrowsArgumentOutOfRangeException()
+        {
+            int afterLast = _allTweenTypes.Max(t => (int)t) + 1;
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tween.GetEaseFunction((TweenType)afterLast));
         }
 
         [Test, Description("EaseInOutSine => Monotonically increasing at sample points?")]
@@ -245,6 +258,41 @@ namespace Calluna.Core.Tests
             Func<float, float> fn = Tween.GetEaseFunction(testCase.type);
             float result = fn(0.5f);
             Assert.AreEqual(testCase.expected, result, 0.0001f);
+        }
+
+        [Test, Description("Quint easings => Return the easings.net values?")]
+        [TestCase(0.5f, 0.03125f, 0.96875f, 0.5f)]
+        [TestCase(0.25f, 0.0009765625f, 0.7626953f, 0.015625f)]
+        [TestCase(0.75f, 0.2373047f, 0.9990234f, 0.984375f)]
+        public void Tween_Quint_ReturnsExpectedValues(float input, float easeIn, float easeOut, float easeInOut)
+        {
+            Assert.AreEqual(easeIn, Tween.EaseInQuint(input), 0.0001f);
+            Assert.AreEqual(easeOut, Tween.EaseOutQuint(input), 0.0001f);
+            Assert.AreEqual(easeInOut, Tween.EaseInOutQuint(input), 0.0001f);
+        }
+
+        [Test, Description("GetEaseFunction => Returns the quint easing of each quint TweenType?")]
+        public void Tween_GetEaseFunction_ReturnsQuintFunctions()
+        {
+            Assert.AreEqual(Tween.EaseInQuint(0.3f), Tween.GetEaseFunction(TweenType.EaseInQuint)(0.3f));
+            Assert.AreEqual(Tween.EaseOutQuint(0.3f), Tween.GetEaseFunction(TweenType.EaseOutQuint)(0.3f));
+            Assert.AreEqual(Tween.EaseInOutQuint(0.3f), Tween.GetEaseFunction(TweenType.EaseInOutQuint)(0.3f));
+        }
+
+        [Test, Description("Quint easings => Monotonically increasing at sample points?")]
+        public void Tween_Quint_MonotonicallyIncreasing()
+        {
+            float[] inputs = { 0f, 0.1f, 0.25f, 0.5f, 0.75f, 0.9f, 1f };
+            foreach (Func<float, float> ease in new Func<float, float>[] { Tween.EaseInQuint, Tween.EaseOutQuint, Tween.EaseInOutQuint })
+            {
+                float previous = -1f;
+                foreach (float t in inputs)
+                {
+                    float value = ease(t);
+                    Assert.GreaterOrEqual(value, previous);
+                    previous = value;
+                }
+            }
         }
     }
 }

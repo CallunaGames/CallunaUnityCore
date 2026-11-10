@@ -14,6 +14,11 @@ namespace Calluna
         EaseInBack = 7,
         EaseOutBack = 8,
 
-        Linear = 9
+        Linear = 9,
+
+        // Appended, so the serialized numbers of the types above stay the same.
+        EaseInOutQuint = 10,
+        EaseInQuint = 11,
+        EaseOutQuint = 12
     }
 }

@@ -1,3 +1,8 @@
+## [1.8.0] - 2026-11-10
+
+### Added
+- `TweenType.EaseInOutQuint`, `EaseInQuint` and `EaseOutQuint` with the easing functions `Tween.EaseInOutQuint`, `EaseInQuint` and `EaseOutQuint` (easings.net). The new types are appended to the enum (10-12), so the serialized values of the existing types don't change.
+
 ## [1.7.0] - 2026-09-28
 
 Transition release: new APIs for subscriptions, coroutines, accumulating values, observable lists and typed ids. The APIs they replace still work but are marked `[Obsolete]` and will be removed in 2.0.0, so projects can migrate step by step - uses of them show CS0618 warnings naming the replacement. Also contains fixes and one behavior change of `Observable<T>` (see Changed).
